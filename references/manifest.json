@@ -24,6 +24,22 @@
       "url": "https://github.com/happycube/cxadc-linux3.wiki.git",
       "commit": "5462e62158de4764d7e11bffcc7c8169012fe2e6",
       "checkout": "sparse root Markdown, depth 1, blob filtered"
+    },
+    {
+      "name": "tbc-tools",
+      "url": "https://github.com/harrypm/tbc-tools",
+      "commit": "932ba5ae81e0ac44aa7c52ba5cd4e3c4a77d78cb",
+      "checkout": "depth 1; submodules not initialized; tools consumed separately"
+    }
+  ],
+  "external_tools": [
+    {
+      "name": "tbc-tools",
+      "release": "v3.3.0",
+      "release_commit": "9ce60e193e981b842889cca133f77126ce4c7954",
+      "asset_url": "https://github.com/harrypm/tbc-tools/releases/download/v3.3.0/tbc-tools_v3.3.0_macos_arm64.dmg",
+      "sha256": "10b833b47541267c89211385c1dfcd58da70014264b18d27fcca74fc3733c28a",
+      "purpose": "Offline colour export; arm64 vendor binary, no driver dependency"
     }
   ]
 }

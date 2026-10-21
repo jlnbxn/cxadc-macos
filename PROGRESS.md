@@ -48,5 +48,11 @@ recognizable image visually inspected. No driver-side signal processing.
 A real 60 s capture wrote 1,718,181,780 bytes with 25 observed wraps and no reported
 DMA/overrun errors. No authoritative zero-loss claim. Temporary idle-sleep assertion
 is hardware-tested. Current idle reference defaults restored; master off.
-Next: finish external TBC inspection/export, multi-minute capture and remaining
-failure-path validation, then safely isolated VHS RF and actual VHS-Decode.
+V8 sustained capture and real PAL decoding committed as `8a4d842`.
+Normal colour export now also verified with official native TBC Tools v3.3.0:
+249 frames, 928×576, 25 fps, 9.96 s, FFV1 MKV. Export previews at 1/5/9 s show
+recognizable real colour video with artefacts. GUI TBC inspection is blocked by
+denied computer-use access, explicitly unverified.
+Next: multi-minute capture and remaining failure paths, then safely isolated VHS RF
+and actual VHS-Decode acceptance. DriverKit remains viable; no signing or DMA
+mapping blocker is present for the tested development setup.

@@ -87,3 +87,16 @@ help and executed on genuine captures. Inspect the TBC and JSON, not just exit
 status: unsuccessful field lock can still return exit 0. Decoder startup warnings
 and reduced sync confidence remain; see TESTING.md. The CLI holds a temporary
 idle-sleep assertion during capture. Forced sleep and hot unplug remain untested.
+
+Normal colour export was also verified using official TBC Tools v3.3.0 arm64:
+
+```sh
+tbc-video-export --profile ffv1 --no-dropout-correct --threads 4 cvbs_test.tbc cvbs_test_export
+```
+
+The real ten-second recording exported 249 frames, 928×576 at 25 fps, 9.96 s,
+yuv422p10le in FFV1 MKV. Source `.u8` is unchanged. Frame previews at 1, 5 and 9 s
+show recognizable colour video, with remaining visible artefacts. This is an
+external verification/export step; codecs are not part of the capture engine.
+Current TBC Tools calls the GUI `tbc-analyse` (formerly `ld-analyse`). GUI inspection
+was blocked by denied computer-use access and remains unverified.

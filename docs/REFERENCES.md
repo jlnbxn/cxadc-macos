@@ -111,3 +111,28 @@ visually inspected: 6-47 (write-only RUN_RISC), 6-86 (video transfer-in-progress
 6-72 defines output bit 0 as reserved read-only zero. It is not valid to read
 RUN_RISC back as if it were an ordinary RW register. The pinned Windows bitfields
 independently mark output bit 0 reserved.
+
+CVBS validation built the pinned VHS-Decode snapshot in build/decode-venv using
+Python 3.12 and an archived source copy, not modifications to the reference.
+Dependencies include NumPy, SciPy, Numba, Cython, soxr, soundfile and Rust wheel
+build support. `cvbs-decode --help` verified frequency in MHz, PAL and accepted
+legacy `-A`. Genuine AGC-disabled captures were actually decoded; RF was not.
+The decoder may resample internally offline; raw input files remain unchanged.
+The current VHS-Decode CMakeLists references removed C++ directories, so building
+those legacy paths failed. Its README/workflow points to current TBC tools:
+https://github.com/harrypm/tbc-tools at
+`932ba5ae81e0ac44aa7c52ba5cd4e3c4a77d78cb`, a separate clean depth-one clone.
+No source from that external GPL tool suite is incorporated into the driver.
+The suite renamed ld-analyse to tbc-analyse. Native release binaries are evaluated
+separately; dependencies/tools remain outside the driver build.
+
+For actual export, used the official TBC Tools v3.3.0 macOS arm64 DMG, release
+commit `9ce60e193e981b842889cca133f77126ce4c7954`, SHA256
+`10b833b47541267c89211385c1dfcd58da70014264b18d27fcca74fc3733c28a`.
+The downloaded hash matches the digest returned by GitHub's release API. The
+latest source clone is separately pinned and was not locally compiled: current
+CMake requires ONNX Runtime and ezpwd submodule headers. The official binary
+performed the actual FFV1 export; this dependency is not part of the native driver.
+Its bundled tbc-video-export reports version0.0.0 despite release v3.3.0; provenance
+is the release tag and verified DMG digest, not that internal version string.
+The external GPL-3.0 suite remains unmodified and is not redistributed in Git.

@@ -178,3 +178,44 @@ disk-full, archival durations and VHS RF decoding remain untested.
 Milestone commits: `1b78b14` (ADC/readback and 32-bit mappings), `4ea0fd5`
 (genuine raw streaming, IRQs and teardown). Subsequent v8 CVBS validation is
 recorded in the next focused commit; use Git history for its full hash.
+
+The v8 AGC-disabled 10 s capture's first nominal second measures ~63.9946 us
+(~15,626.3 Hz), sync tip ~71.70 and porch ~102.27 at threshold80; chroma peak
+~4.43405 MHz. Unlike the earlier AGC-enabled baseline, this is close to PAL line
+timing. These diagnostics still assume the nominal oscillator. Startup settling
+and decoder confidence remain limitations; no precise frequency calibration.
+V8 capture/decoder milestone committed as `8a4d842`.
+
+## Normal colour export
+
+Official TBC Tools v3.3.0 macOS arm64 release, tag commit
+`9ce60e193e981b842889cca133f77126ce4c7954`; downloaded asset SHA256 matches the
+GitHub release digest recorded in references/manifest.json. Mounted read-only,
+copied into ignored build/tbc-tools.app, with no system installation or security
+changes. Help verified before execution:
+
+```sh
+build/tbc-tools.app/Contents/MacOS/tbc-video-export --profile ffv1 --no-dropout-correct --threads 4 artifacts/cvbs-agc0-v8-10s-decoded.tbc artifacts/cvbs-agc0-v8-10s-export
+```
+
+Exit0, completed in ~4.2 s. Export used automatic PAL TRANSFORM3D colour decoding
+and automatic field order (resolved TFF), no dropout correction. FFprobe counted
+249 video frames: FFV1, 928×576, yuv422p10le, 25/1 fps, top-field-first, duration
+9.96 s. File size 147,550,617 bytes. PNG frames at 1/5/9 s were visually inspected:
+recognizable colour source video across the recording, with visible chroma/luma
+artefacts. No perfect-colour, archival-quality or zero-loss assertion. Output is
+`artifacts/cvbs-agc0-v8-10s-export.mkv`; comparison preview is
+`artifacts/cvbs-agc0-v8-10s-contact.png`. All captures/exports remain ignored.
+
+The current source clone uses tbc-analyse, the successor to ld-analyse. Desktop
+inspection could not be completed: computer-use rejected the app path and denied
+Finder access. No permission bypass attempted. Only decoded-file statistics and
+exported image inspection are verified; interactive GUI inspection remains open.
+The export runtime also needed outside-sandbox execution after its semaphore was
+denied inside the agent sandbox. This is not a DriverKit signing/DMA blocker.
+
+The first source-build attempt targeted stale VHS-Decode CMake paths (missing
+C++ tool directories). Homebrew qwt/fftw were installed for that attempt; the
+current TBC-tools source additionally requires ONNX Runtime/submodules. Instead
+of extending those dependencies, the published native release was used. No claim
+is made that the current TBC-tools source was locally compiled or CI-validated.
