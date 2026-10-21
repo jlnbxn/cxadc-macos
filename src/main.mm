@@ -4,6 +4,7 @@
 #include <cstring>
 #include "../common/Probe.hpp"
 int runControl(int argc,char **argv);
+int runCapture(int argc,char **argv);
 
 static NSString *hex(uint64_t value) {
     return [NSString stringWithFormat:@"0x%llx", (unsigned long long)value];
@@ -41,9 +42,13 @@ static NSDictionary *probeJSON(NSData *data) {
 int main(int argc, char **argv) {
     @autoreleasepool {
         if(argc>=2 && (!strcmp(argv[1],"--configure") || !strcmp(argv[1],"--dma-check") || !strcmp(argv[1],"--status")))return runControl(argc,argv);
+        if(argc>=3)return runCapture(argc,argv);
         if (argc != 2 || (strcmp(argv[1], "--list") && strcmp(argv[1], "--info"))) {
-            fprintf(stderr, "Usage: cxadc-capture --list|--info\nStage A only: capture and ADC configuration are not implemented.\n");
-            return 64;
+            fprintf(stderr, "Usage: cxadc-capture --list|--info|--status|--dma-check\n"
+                "  --configure [--vmux 0..3 --level 0..31 --sixdb 0|1 --center-offset 0..255]\n"
+                "  --output FILE.u8 [--duration SECONDS] [--vmux N --level N --sixdb N --center-offset N --ring-mib 8|64]\n"
+                "Default gain=0, boost=0, offset=8, vmux=1 (connector unverified); no duration means Ctrl-C stop.\n");
+            return argc==2 && !strcmp(argv[1],"--help")?0:64;
         }
         io_iterator_t devices = 0;
         auto result = IOServiceGetMatchingServices(kIOMainPortDefault, IOServiceMatching("IOPCIDevice"), &devices);
@@ -59,7 +64,7 @@ int main(int argc, char **argv) {
                 @"subsystem_vendor_id":hex(pciID(device,"subsystem-vendor-id")),
                 @"subsystem_device_id":hex(pciID(device,"subsystem-id")),
                 @"revision":hex(pciID(device,"revision-id")), @"registry_entry_id":hex(entryID),
-                @"capture_implemented":@NO, @"adc_configuration_applied":@NO,
+                @"capture_implemented":@YES, @"adc_configuration_applied":[NSNull null],
                 @"sample_rate_hz": [NSNull null], @"clock_verified":@NO} mutableCopy];
             id address = property(device,"assigned-addresses");
             if ([address isKindOfClass:[NSData class]]) {
@@ -91,7 +96,7 @@ int main(int argc, char **argv) {
         }
         IOObjectRelease(devices);
         NSError *error = nil;
-        NSData *json = [NSJSONSerialization dataWithJSONObject:@{@"devices":found, @"stage":@"A", @"capture_available":@NO}
+        NSData *json = [NSJSONSerialization dataWithJSONObject:@{@"devices":found, @"stage":@"B", @"capture_available":[NSNull null]}
             options:NSJSONWritingPrettyPrinted|NSJSONWritingSortedKeys error:&error];
         if (!json) { fprintf(stderr,"JSON failed: %s\n",error.description.UTF8String); return 1; }
         if (fwrite(json.bytes,1,json.length,stdout)!=json.length || fputc('\n',stdout)==EOF || fflush(stdout)) return 1;

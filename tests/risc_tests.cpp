@@ -12,7 +12,7 @@ int main() {
     assert(used==words.size() && words[0]==0x80030000 && words.back()==0x84000004);
     unsigned irqs=0,incs=0,resets=0;
     for(size_t i=1;i<used-2;i+=2) {
-        auto op=words[i];assert((op&0xf000ffff)==0x10000800);
+        auto op=words[i];assert((op&0xf000ffff)==0x10000800 && (op&0x0c000000)==0x0c000000);
         irqs+=(op&0x01000000)!=0;incs+=(op&0x30000)==0x10000;resets+=(op&0x30000)==0x30000;
         auto index=(i-1)/2;auto expected=index*2048<bytes/2?0x80000000+index*2048:0x90000000+index*2048-bytes/2;
         assert(words[i+1]==expected);

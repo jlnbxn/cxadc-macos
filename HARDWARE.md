@@ -79,3 +79,13 @@ ID dword; do not substitute this readback for a documented reset value or infer
 undocumented bits. Its known RISC-enable bit 5 is clear. The other raw setup values
 have not been written. `mmio_valid` means the bounded reads did not return the API's
 all-ones failure sentinel; it does not prove analog signal fidelity or chip settings.
+
+
+Stage B signal tests: the user confirmed disconnected inputs for initial captures,
+then connected a known-good PAL MiniDV conventional CVBS output to RCA. VMUX1
+changed from a narrow 110..112 disconnected distribution to a clear CVBS waveform,
+70..159, with horizontal-sync periodicity and colour-carrier energy. VMUX0 also
+receives CVBS with C31 intact; no exclusive mapping is inferred. No physical card
+or VCR changes were made. Sixdb=0 follows the pinned CXADC control convention
+(bit 23=0); the old datasheet's INIT_6DB_VAL polarity description conflicts with
+the upstream off/on naming, so electrical boost calibration is still unverified.

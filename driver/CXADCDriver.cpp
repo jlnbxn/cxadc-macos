@@ -11,9 +11,12 @@
 #include "../common/Control.hpp"
 #include "../core/Raw.hpp"
 #include "DmaMemory.hpp"
+#include "Stream.hpp"
+#include <DriverKit/IOTimerDispatchSource.h>
 #include <DriverKit/IODispatchQueue.h>
 
-struct CXADCDriver_IVars { IOPCIDevice *pci = nullptr; bool open = false; uint8_t index=0; cxadc::Status state{}; };
+struct CXADCDriver_IVars { IOPCIDevice *pci = nullptr; bool open = false; uint8_t index=0; cxadc::Status state{}; Stream *stream=nullptr; IOUserClient *owner=nullptr;
+ IOInterruptDispatchSource *irq=nullptr; IOTimerDispatchSource *timer=nullptr; OSAction *irqAction=nullptr,*timerAction=nullptr; };
 bool CXADCDriver::init() {
     if (!super::init()) return false;
     ivars = new CXADCDriver_IVars;
@@ -89,12 +92,16 @@ kern_return_t IMPL(CXADCDriver, Start) {
     if (properties) properties->release();
     if (result) { pci->Close(this, 0); return result; }
     pci->retain(); ivars->pci = pci; ivars->open = true; ivars->index=index;
+    SetupEvents();
     result = RegisterService();
     if (result) { pci->Close(this, 0); ivars->open = false; }
     os_log(OS_LOG_DEFAULT, "CXADC: attachment probe finished, mmio-read=%u valid=%u; engines remain off", probe.mmioRead, probe.mmioValid);
     return result;
 }
 kern_return_t IMPL(CXADCDriver, Stop) {
+    StopStream();
+    if(ivars->irq){auto source=ivars->irq;auto action=ivars->irqAction;ivars->irq=nullptr;ivars->irqAction=nullptr;source->Cancel(^{source->release();if(action)action->release();});}
+    if(ivars->timer){auto source=ivars->timer;auto action=ivars->timerAction;ivars->timer=nullptr;ivars->timerAction=nullptr;source->Cancel(^{source->release();if(action)action->release();});}
     if (ivars->open) { ivars->pci->Close(this, 0); ivars->open = false; }
     return Stop(provider, SUPERDISPATCH);
 }
@@ -106,9 +113,104 @@ kern_return_t IMPL(CXADCDriver, NewUserClient) {
     if(!*userClient){service->release();return kIOReturnError;}
     return kIOReturnSuccess;
 }
-kern_return_t CXADCDriver::ClientClosed(IOUserClient *) { return kIOReturnSuccess; }
-kern_return_t CXADCDriver::Command(uint64_t selector,IOUserClientMethodArguments *args,IOUserClient *) {
+kern_return_t CXADCDriver::ClientClosed(IOUserClient *client) { return client==ivars->owner?StopStream():kIOReturnSuccess; }
+void CXADCDriver::SetupEvents() {
+    IODispatchQueue *queue=nullptr;
+    auto r=CopyDispatchQueue(kIOServiceDefaultQueueName,&queue);
+    if(r){ivars->state.irqCreate=r;return;}
+    r=IOInterruptDispatchSource::Create(ivars->pci,0,queue,&ivars->irq);
+    if(!r)r=CreateActionInterruptEvent(0,&ivars->irqAction);
+    if(!r)r=ivars->irq->SetHandler(ivars->irqAction);
+    ivars->state.irqCreate=r;
+    if(!r)r=IOTimerDispatchSource::Create(queue,&ivars->timer);
+    if(!r)r=CreateActionTimerEvent(0,&ivars->timerAction);
+    if(!r)r=ivars->timer->SetHandler(ivars->timerAction);
+    if(r)ivars->state.irqCreate=r;
+    queue->release();
+}
+kern_return_t CXADCDriver::StartStream(IOUserClient *client,uint32_t ringMiB) {
+    if(ringMiB!=8 && ringMiB!=64)return kIOReturnBadArgument;
+    if(!ivars->state.initialized || ivars->state.quarantined || ivars->stream ||
+       !ivars->irq || !ivars->timer || ivars->state.irqCreate)return kIOReturnNotReady;
+    ivars->stream=new Stream;ivars->owner=client;
+    if(!ivars->stream){ivars->owner=nullptr;return kIOReturnNoMemory;}
+    auto r=ivars->stream->prepare(ivars->pci,ivars->index,ringMiB);
+    os_log(OS_LOG_DEFAULT,"CXADC: capture prepare=%08x",r);
+    if(!r){r=ivars->irq->SetEnable(true);os_log(OS_LOG_DEFAULT,"CXADC: interrupt enable=%08x",r);}
+    if(!r){r=ivars->timer->SetEnable(true);os_log(OS_LOG_DEFAULT,"CXADC: watchdog enable=%08x",r);}
+    if(!r){r=ivars->stream->start();os_log(OS_LOG_DEFAULT,"CXADC: engine start=%08x",r);}
+    if(!r)r=ivars->timer->WakeAtTime(kIOTimerClockUptimeRaw,monotonicNS()+5000000,0);
+    if(r){ivars->stream->stats.error=r;StopStream();}
+    else {
+        ivars->state.sampleIOVA=ivars->stream->samples.segments[0].address;
+        ivars->state.programIOVA=ivars->stream->program.segments[0].address;
+        ivars->state.mappedBytes=ivars->stream->samples.bytes;
+        ivars->state.mapCount=ivars->stream->samples.count;
+        os_log(OS_LOG_DEFAULT,"CXADC: raw DMA started ringMiB=%u sampleIOVA=%llx programIOVA=%llx",ringMiB,ivars->state.sampleIOVA,ivars->state.programIOVA);
+    }
+    return r;
+}
+kern_return_t CXADCDriver::StopStream() {
+    if(!ivars->stream)return kIOReturnSuccess;
+    if(ivars->irq)ivars->irq->SetEnable(false);
+    if(ivars->timer)ivars->timer->SetEnable(false);
+    auto r=ivars->stream->stop();
+    ivars->state.stream=ivars->stream->stats;
+    if(r) {
+        ivars->state.quarantined=1;ivars->state.initialized=0;
+        os_log(OS_LOG_DEFAULT,"CXADC: stop could not establish safe cleanup: %08x; mappings retained",r);
+    } else {
+        delete ivars->stream;ivars->stream=nullptr;
+    }
+    ivars->owner=nullptr;
+    os_log(OS_LOG_DEFAULT,"CXADC: stop result=%08x safe=%u command=%04x IRQs=%llu delivered=%llu wraps=%llu stream-error=%08x",
+           r,ivars->state.stream.stopSafe,ivars->state.stream.commandRestored,ivars->state.stream.interrupts,
+           ivars->state.stream.deliveredBytes,ivars->state.stream.wraps,ivars->state.stream.error);
+    return r;
+}
+void IMPL(CXADCDriver, InterruptEvent) {
+    (void)action;(void)count;(void)time;
+    if(!ivars->stream || !ivars->stream->stats.running)return;
+    auto r=ivars->stream->observe(true);
+    if(r){ivars->stream->stats.error=r;StopStream();}
+    else ivars->irq->SetEnable(true);
+}
+void IMPL(CXADCDriver, TimerEvent) {
+    (void)action;(void)time;
+    if(!ivars->stream || !ivars->stream->stats.running)return;
+    auto r=ivars->stream->observe(false);
+    if(!r)r=ivars->timer->WakeAtTime(kIOTimerClockUptimeRaw,monotonicNS()+5000000,0);
+    if(r){ivars->stream->stats.error=r;StopStream();}
+}
+kern_return_t CXADCDriver::Command(uint64_t selector,IOUserClientMethodArguments *args,IOUserClient *client) {
     if(!args || !ivars->open)return kIOReturnNotReady;
+    if(selector>=cxadc::startCapture && selector<=cxadc::stopCapture) {
+        if(args->completion || args->structureInput || args->structureInputDescriptor || args->scalarOutputCount)return kIOReturnBadArgument;
+        if(selector==cxadc::startCapture) {
+            if(args->scalarInputCount!=1 || !args->scalarInput || args->scalarInput[0]>64 || args->structureOutputMaximumSize || args->structureOutputDescriptor)return kIOReturnBadArgument;
+            return StartStream(client,uint32_t(args->scalarInput[0]));
+        }
+        if(args->scalarInputCount)return kIOReturnBadArgument;
+        if(ivars->owner && ivars->owner!=client)return kIOReturnNotPermitted;
+        if(selector==cxadc::stopCapture) {
+            if(args->structureOutputMaximumSize || args->structureOutputDescriptor)return kIOReturnBadArgument;
+            return StopStream();
+        }
+        if(!args->structureOutputDescriptor || args->structureOutputMaximumSize!=cxadc::chunkBytes)return kIOReturnBadArgument;
+        if(!ivars->stream)return ivars->state.stream.error?ivars->state.stream.error:kIOReturnNotReady;
+        auto result=ivars->stream->copy(args->structureOutputDescriptor);
+        ivars->state.stream=ivars->stream->stats;
+        if(result && result!=kIOReturnNotReady){ivars->stream->stats.error=result;StopStream();}
+        return result;
+    }
+    if(selector==cxadc::status && ((ivars->stream && ivars->stream->stats.running) || ivars->state.quarantined)) {
+        if(args->completion || args->scalarInputCount || args->scalarOutputCount || args->structureInput || args->structureInputDescriptor ||
+           args->structureOutputDescriptor || args->structureOutputMaximumSize!=sizeof(cxadc::Status))return kIOReturnBadArgument;
+        if(ivars->stream){ivars->state.stream=ivars->stream->stats;
+            ivars->state.command=ivars->stream->command();ivars->state.videoDma=ivars->stream->read(0x31c040);}
+        args->structureOutput=OSData::withBytes(&ivars->state,sizeof(ivars->state));
+        return args->structureOutput?kIOReturnSuccess:kIOReturnNoMemory;
+    }
     if(args->completion || args->structureInput || args->structureInputDescriptor ||
        args->structureOutputDescriptor || args->scalarOutputCount)return kIOReturnBadArgument;
     bool output=selector==cxadc::status || selector==cxadc::dmaCheck;

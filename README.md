@@ -1,55 +1,74 @@
 # CX23880 CXADC for macOS
 
-Native arm64 PCIDriverKit development for unsigned 8-bit raw RF capture from
-Conexant `14f1:8800`. **Stage A: enumeration and a bounded register probe.**
-Capture, ADC initialization, DMA, streaming and VHS-Decode validation are not yet
-implemented. The v2 probe has read real registers and restored PCI command 0000.
-No sample file has been produced.
+Native arm64 PCIDriverKit raw ADC capture for Conexant `14f1:8800`. Driver v7 has
+captured real unsigned 8-bit samples with disconnected inputs (1 and 10 seconds)
+and PAL MiniDV composite input on RCA (5 seconds). CVBS decoding and VHS RF
+acceptance are still pending. This is development software, not archival validation.
 
 ```sh
 ./scripts/build.sh
+./scripts/build-local-host.sh       # builds; does not install
 ./build/cxadc-capture --list
-./build/cxadc-capture --info
-./scripts/build-driver.sh
-./scripts/build-local-host.sh
-python3 scripts/check-probe.py     # check the actual attached v2 probe
-python3 tools/analyze_u8.py FILE.u8 --sample-rate 28636363
+./build/cxadc-capture --info          # attachment snapshot, not live state
+./build/cxadc-capture --status        # live hardware/user-client status
+./build/cxadc-capture --dma-check     # mapping test; never starts hardware DMA
+./build/cxadc-capture --configure --vmux 1 --level 0 --sixdb 0 --center-offset 8
+./build/cxadc-capture --duration 1 --output test.u8 --vmux 1 --level 0
+python3 tools/analyze_u8.py test.u8 --sample-rate 28636363
+python3 tools/check_capture.py test.u8
+```
+
+Output is a genuine ADC byte stream, without PAL decoding, filtering, resampling,
+compression or byte swapping. Stock-clock configuration is nominally 28.636363
+MSPS; no calibrated oscillator measurement exists. Finite duration writes the exact
+nominal-rate byte count from ordered full DMA blocks, trimming only the final
+block prefix. Delivered and written counts are reported separately.
+
+Omit `--duration` for continuous capture; Ctrl-C requests hardware stop followed by
+writer-queue drain. The output and `FILE.u8.json` sidecar refuse overwrite. Failed
+captures retain a visibly failed sidecar and possibly a valid data prefix. Abrupt
+process death may leave the initial incomplete sidecar. Statistics go to stderr.
+File output is implemented; stdout streaming is not yet supported.
+
+Options: `--vmux 0..3`, `--level 0..31`, `--sixdb 0|1`, `--center-offset 0..255`,
+`--ring-mib 8|64`. Defaults: VMUX1, level 0, sixdb 0, offset 8, 64 MiB ring. RCA
+CVBS has been observed on VMUX1 and VMUX0 with C31 intact; no physical modification
+is required for these tests. Sixdb follows Linux CXADC's logical control convention;
+electrical boost polarity/calibration remains unverified.
+
+The 8 MiB ring exercised three wraps in a warmed one-second run, but its first cold
+start hit the conservative watchdog limit. Use the 64 MiB default. Capture stops
+on hardware faults, consumer overrun, missing completion or ambiguous modulo-counter
+progress. No authoritative dropped-sample count is available; metadata leaves it
+null. A short run with no reported errors is not proof of zero sample loss.
+
+The exact endpoint/subsystem match is `14f1:8800` / `4e4f:4553`. The driver never
+binds to the ITE bridge, 8804 function or CX23885. All DMA mappings use device-bound
+IODMACommand, validate full 32-bit ranges and stay prepared through verified stop.
+Real interrupt callbacks work on the observed legacy endpoint; no polling fallback
+is used. Shutdown failure quarantines mappings and blocks further capture.
+
+Tested with macOS 26.7.1, Xcode/DriverKit 27.0. The development host is ad hoc signed;
+normal distribution requires proper Apple signing/provisioning. Existing SIP and
+system-extension developer settings were not changed. The host activation request
+may require approval in System Settings. Activation success does not prove the new
+instance attached; check `--status` driver build. Never replace/deactivate an active
+capture. The existing HVR-1200 source and activated driver remain unchanged.
+
+Native builds have no external dependencies. Tests:
+
+```sh
+xcrun clang++ -std=c++20 -fsanitize=address,undefined tests/risc_tests.cpp -o build/risc-tests
+./build/risc-tests
 python3 -m unittest discover -s tests -v
 ```
 
-Tested build environment: Apple Silicon, macOS 26.7.1, Xcode/DriverKit 27.0.
-Builds create an unsigned dext and an ad hoc signed development host, without
-installing anything. Normal distribution requires Apple signing and provisioning.
-No external libraries are required. Reference clones live under ignored
-`references/`; pinned revisions and licensing are in [docs/REFERENCES.md](docs/REFERENCES.md).
-
-The CLI emits JSON from the actual IORegistry. Exit status 2 means no CX23880,
-64 means invalid arguments, and 1 means an operational failure. Unsupported capture
-arguments fail explicitly and do not create output files. `--info` currently includes
-only a snapshot taken when the driver attached, not live ADC settings. No user client
-or register-write interface is exposed.
-
-The diagnostic extension matches only `14f1:8800`, subsystem `4e4f:4553`.
-It never matches the ITE bridge, `8804` function or HVR-1200. It reads PCI configuration
-and, only with bus mastering off, a fixed list of CX23880 registers. Version 2
-temporarily enables only PCI memory decoding, performs no MMIO writes,
-restores and checks the exact original PCI command, and enables neither interrupts
-nor DMA. If bus mastering is already on, it skips MMIO entirely. An all-ones MMIO
-result aborts further register reads.
-
-The local host accepts `activate` and `deactivate`; these request macOS system-extension
-operations and can require OS approval. They change no security settings. Activation
-success alone does not establish attachment: inspect `cxadc-capture --info` afterward.
-The existing HVR-1200 project and installed extension are separate and remain unchanged.
-
+Reference clones are separate and pinned in [references/manifest.json](references/manifest.json).
 See [HARDWARE.md](HARDWARE.md), [ARCHITECTURE.md](ARCHITECTURE.md),
-[TESTING.md](TESTING.md) and [PROGRESS.md](PROGRESS.md).
+[TESTING.md](TESTING.md), [PROGRESS.md](PROGRESS.md) and [source/license notes](docs/REFERENCES.md).
+Project source is GPL-2.0-or-later. Builds, captures, decode outputs and dependency
+installations stay ignored. No remote or code publication is configured.
 
-Project source is GPL-2.0-or-later. Upstream reference repositories retain their
-own licenses. Raw RF connection remains a later milestone: VCR tap DC isolation,
-input loading and safe levels must be resolved before connecting RF.
-
-The offline analyzer reports a 256-code histogram, clipping-code counts/percentages,
-mean, standard deviation, AC/DC RMS and code-span dB. It does not measure analog
-dynamic range, sample clock or capture correctness. Its explicit sample-rate argument
-is an assumption. No FFT is implemented. Tests use generated arithmetic fixtures only.
+Next: validate actual CVBS decoding and export, cancellation/failure paths and longer
+streaming, then an appropriately isolated VHS RF input. No RF tap or VCR wiring
+changes have been made.

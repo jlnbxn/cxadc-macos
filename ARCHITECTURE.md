@@ -1,62 +1,63 @@
-# Implementation and next gates
+# Capture architecture — implemented through driver v7
 
-The implemented vertical slice is IORegistry enumeration → exact endpoint matching
-→ DriverKit PCI open → PCI configuration and bounded register reads → immutable
-registry snapshot → native JSON CLI. It has no DMA allocation, sample generation,
-ADC configuration or interrupt acknowledgement. V2 enables PCI memory decoding
-only around the bounded read, then verifies restoration of the exact command word. All offsets are CX23880 definitions
-from the pinned Linux source; no CX23885 register assumptions are carried across.
+The verified Stage A endpoint/BAR lifecycle remains in place. Attachment makes a
+bounded register snapshot, then leaves PCI command restored. An entitled native
+user client adds serialized static ADC configuration, mapping tests, status and
+start/pull/stop operations. All hardware operations run on the driver's default
+serial queue; user-client methods, interrupt callbacks and watchdog callbacks share
+that queue. Only the observed Conexant endpoint/subsystem matches.
 
-PCIDriverKit is the first choice: the installed SDK supplies Open/Close,
-ConfigurationRead, GetBARInfo, MemoryRead32, IOInterruptDispatchSource and
-IODMACommand. The same Mac already activates a custom PCI DriverKit driver.
-The diagnostic target compiles against these actual installed headers. Apple’s
-[PCI interface](https://developer.apple.com/documentation/pcidriverkit/iopcidevice)
-and [entitlement requirements](https://developer.apple.com/documentation/driverkit/requesting-entitlements-for-driverkit-development)
-remain applicable; ad hoc entitlements are not distribution approval.
+Static RAW8 configuration follows the pinned Linux CXADC sequence at stock PLL
+11000000/SCONV 20000. GPIO, tuner and decoder firmware are untouched. VMUX, level,
+sixdb and center offset remain general raw ADC controls. The driver performs no
+CVBS/RF-specific processing. Writable settings are read back; reserved output
+bit 0 is excluded based on the manufacturer datasheet. RUN_RISC is write-only,
+so its readback is not used to infer state.
 
-Legacy IOKit headers are installed, including IOPCIDevice and DMA support. A kext
-would require kernel approval/signing/AuxKC validation on Apple Silicon and would
-not automatically repair missing PCI INTx routing or remove DART constraints.
-There is currently no demonstrated DriverKit API blocker justifying that risk.
-No kext build or security change is proposed at Stage A. Reevaluate only on concrete
-DriverKit mapping/completion/throughput evidence.
+Samples, the RISC program and driver-owned CPU staging memory use IODMACommand
+with maxAddressBits=32 on the actual endpoint. Every device-visible segment's full
+address range, alignment and coverage is checked before narrowing an operand.
+Host pointers and BAR addresses are never used as DMA addresses. Program storage
+must be one contiguous device-visible segment. The RISC generator supports sample
+scatter/gather segments and uses explicit 16 KiB accounting pages / 2048-byte
+WRITE transfers. Tests cover 32-bit boundaries, encoding, SG crossing and wrap.
 
-Later modules should separate chip configuration, DMA mappings, completion accounting,
-buffer ownership and userspace disk writing. Stage B must run only while mastering,
-engines and interrupt masks are idle. Stock-clock 8-bit configuration comes from the
-pinned Linux sequence, without its start-DMA-during-probe ordering.
+Channel 24 uses the Linux eight-cluster SRAM CDT and CMDS layout. Dynamic DMA
+counter/pointer registers are not static readback latches: writing CNT2 starts CDT
+consumption. Static SRAM descriptors and command fields are checked instead. Bus
+mastering is enabled only after mapping/program preparation and descriptor checks.
 
-DMA gates before Stage C:
+The default 64 MiB sample ring provides ~2.34 seconds at nominal rate. A 256 KiB
+RISC IRQ1 cadence drives real IOInterruptDispatchSource callbacks. Completion
+reads GPCNT only after the event and rounds to the IRQ boundary. One full completed
+IRQ block is held back before exposing bytes. Pull checks producer distance both
+before and after copying to prepared staging, then CPU-maps the caller descriptor;
+caller memory is never passed to PerformOperation. There is no completion polling
+fallback in v7. Actual legacy interrupt delivery works on this observed macOS.
 
-1. Map both samples and RISC storage with IODMACommand bound to the actual endpoint,
-   `IODMACommandSpecification.maxAddressBits=32`; retain prepared mappings until
-   confirmed quiescence. Check every returned segment's entire range below 4 GiB,
-   sum, alignment, direction and coverage. Never cast CPU pointers into RISC operands.
-2. Use 2048-byte transfers from channel 24/VBI SRAM descriptors. Handle 16 KiB host
-   pages and scatter/gather boundaries explicitly. Linux's 4 KiB PAGE_SIZE must not
-   become an implicit macOS constant. Require contiguous mapped RISC fetch storage
-   or explicitly verified jumps across mapped segments. Emit little-endian words.
-3. Establish a trustworthy completion boundary. Linux warns GPCNT alone can lead
-   actual memory visibility; its IRQ1 boundary is important. Actual legacy interrupt delivery needs validation. Initial routing properties were
-   absent; after DriverKit open the endpoint exposes ApplePCIECLegacyIntController
-   and GetInterruptType succeeds (level). This is not an interrupt-delivery test. Polling a counter, assuming a cache
-   barrier flushes PCI writes, or borrowing the CX23885 ring is insufficient.
-4. Validate coherency and CPU access using supported mapping APIs. Retain mappings
-   through engine stop, bus-master disable, posted-write completion and verified
-   request drain. If quiescence cannot be established, quarantine allocations;
-   freeing possibly active DMA memory risks a system panic. HVR project panic notes
-   motivate this gate, not an assertion of a proven CX23880 stop sequence.
-5. Bound producer-consumer lag; a wrapping/coalesced counter cannot prove an exact
-   dropped-sample total. Fail on ambiguous progress, timeout, hardware fault or
-   consumer overrun. Sleep/unplug require cancellation design and separate tests.
+A 5 ms watchdog checks errors, missing progress and consumer lag. An observation
+gap beyond half a ring time at a conservative 60 MSPS limit is ambiguous and fails
+capture. Modulo counters do not establish an authoritative dropped-sample count.
+The first cold 8 MiB run hit that conservative limit; later small-ring wrap tests
+passed. Default 64 MiB captures passed one/ten-second and CVBS tests.
 
-Target ring: at least 64 MiB (~2.34 seconds at nominal rate), with a separate bounded
-userspace writer queue. DMA must never wait for disk writes. Initial supported
-transfer copies may be acceptable if measured at 28.6 MB/s; zero-copy is not claimed.
-An hour is about 103 GB decimal. The future CLI must refuse overwrite, handle partial
-writes/EINTR/EPIPE/ENOSPC, cleanly stop on signals, and emit a sidecar even on failure.
-Metadata will distinguish configured/estimated/measured clock, delivered/written
-bytes, duration, hardware faults, software-overrun events and unknown sample loss.
-No stream resampling, filtering, PAL decoding or byte swapping is authorized by the
-raw output format itself. The capture utility must preserve hardware byte order.
+The native CLI transfers full 256 KiB blocks into a 32-slot bounded writer queue.
+The disk thread is independent of hardware callbacks; queue exhaustion fails
+visibly. Output is uncompressed u8. Finite capture trims only the final byte prefix
+to the nominal-rate target; delivered versus written counts remain separate.
+Ctrl-C stops hardware before the queue drains. SIGKILL user-client closure and a
+stalled consumer have also been hardware-tested. Metadata starts as incomplete,
+then records success/failure, requested settings, clock uncertainty, byte counts,
+IOVAs, IRQ/counter diagnostics, errors and stop verification. No stdout mode yet.
+
+Stop masks interrupts, disables video FIFO/RISC, writes RUN_RISC=0, waits for the
+documented VID_XFER_STATUS to clear, disables mastering, observes stable counters,
+checks the untouched guard and restores the exact initial PCI command. Only then
+are DMA mappings completed/released. Failed quiescence quarantines mappings and
+blocks capture. The successful short tests verified this path; unplug, sleep/wake
+and archival-duration operation are not yet validated. No CX23885 TC_REQ offsets
+or reset semantics are reused.
+
+PCIDriverKit remains viable: mappings, raw DMA and interrupts now run on hardware.
+There is no demonstrated reason to use a legacy kext. No additional security
+settings have changed; no code has been pushed or published.

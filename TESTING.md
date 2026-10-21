@@ -75,3 +75,53 @@ fixtures are synthetic arithmetic tests, not RF data or DMA evidence.
   addresses and ADC option bounds. This does not validate the hardware engine.
 
 Inputs confirmed disconnected by the user. No analog sample has been captured yet.
+
+
+## Genuine raw capture — driver v7
+
+ADC/mapping milestone commit: `1b78b14`. Native capture CLI and interrupt-driven
+RISC ring now compile and have run on the card. No completion polling fallback
+is used. IOInterruptDispatchSource enable and actual callbacks work on this macOS
+with the legacy endpoint, despite the SDK's MSI-only description.
+
+- v5/v6 pre-start attempts: zero-byte files, no bus mastering. An incorrect static
+  equality check on live DMA counters/pointer caused rejection. Datasheet p6-85
+  says CNT2 starts consuming CDT entries. V7 verifies static SRAM CDT/CMDS instead.
+- First v7 8 MiB attempt: watchdog ambiguity limit fired before a completion event;
+  stopped safely after ~112 ms, zero output, command restored. No silent retry.
+- Disconnected, 64 MiB ring, 1 s: 28,636,363 bytes; 111 IRQ callbacks, codes 110..112,
+  all 109 full 256 KiB blocks unique, no reported hardware/overrun errors.
+- Disconnected, warmed 8 MiB ring, 1 s: same byte count, 111 callbacks and **3 ring
+  wraps**; all 109 full blocks unique. This does not resolve the cold small-ring
+  startup limitation. Default remains 64 MiB.
+- Disconnected, 64 MiB ring, 10 s: 286,363,630 bytes; 1094 callbacks, 4 wraps; all
+  1092 full blocks unique; no reported hardware/overrun errors.
+- PAL MiniDV CVBS, RCA, VMUX1, level=0, sixdb=0, offset=8, 5 s: 143,181,815 bytes;
+  548 callbacks, 2 wraps; all 546 full blocks unique; codes 70..159, mean 110.796,
+  stddev 14.969, no samples at 0 or 255. Sync-like pulse spacing about 63.94 us
+  (~15.64 kHz at nominal sample rate), strong spectral carrier near 4.4341 MHz.
+  These are approximate uncalibrated diagnostics, not exact PAL clock measurements.
+- RCA VMUX0 comparison, 1 s: genuine signal also present (codes 70..187), consistent
+  with white-card C31 input sharing. VMUX1 responds compared to the disconnected
+  baseline and is usable; exclusive connector-to-channel wiring is not claimed.
+
+Every successful run verified disabled video DMA, transfer-in-progress zero,
+unchanged counter across shutdown observations, untouched 16 KiB DMA guard,
+PCI command restoration to 0000 and successful CompleteDMA cleanup. Hardware
+register settings are read back before capture. Metadata separates delivered
+full DMA blocks from the exact byte prefix written for the requested nominal
+sample duration. Timing includes startup/teardown and does not calibrate the clock.
+
+Hashes plus RISC counter observations detect several failure modes; they do not
+prove analog sample order or zero loss. Dropped-sample count remains null. No RF
+input or VHS-Decode acceptance test has been attempted. CVBS-Decode is next.
+
+
+Hardware cancellation tests on v7 (real PAL CVBS data, 64 MiB ring):
+SIGINT finalized 20,971,520 bytes with complete sidecar and exit 0; SIGKILL left
+22,020,096 bytes and the initial incomplete sidecar, but user-client closure stopped
+DMA. A three-second SIGSTOP of the child consumer triggered one explicit overrun
+event, stopped the hardware, then returned failed metadata/exit 1 after SIGCONT.
+All three independently verified command 0000, video DMA off, stop verification,
+no quarantine, and transfer status zero. No unrelated process was signalled.
+These are consumer cancellation/overrun tests, not disk-full or unplug tests.

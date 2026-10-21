@@ -30,3 +30,12 @@ IOVA 80000000 and RISC mapping at 84004000 passed the supported DriverKit memory
 lifecycle and CPU round-trip. Actual RISC capture/interrupt delivery remains next.
 The manufacturer datasheet corrects Stage A: DEV_CNTRL2 is write-only; its readback
 cannot establish RISC state. No physical modifications or CX23885 edits.
+
+
+Stage B capture bring-up: v7 has now captured genuine ADC data at 1 s and 10 s
+with no signal, then 5 s of real MiniDV PAL CVBS on RCA. Native arm64 CLI writes
+u8 plus JSON, configurable VMUX/level/sixdb/offset, bounded disk queue and real
+interrupt completion. Tested ring wrap (3 in one second with 8 MiB), 32-bit IOVAs,
+DMA guard and command restoration. No authoritative dropped-sample claim.
+See TESTING.md for exact counts, failures and cold small-ring startup limitation.
+CVBS decode/export and multi-minute reliability remain unverified.

@@ -3,6 +3,8 @@
 #define CXADC_DRIVER_IIG
 #include <DriverKit/IOService.iig>
 #include <DriverKit/IOUserClient.iig>
+#include <DriverKit/IOInterruptDispatchSource.iig>
+#include <DriverKit/IOTimerDispatchSource.iig>
 class CXADCDriver : public IOService {
 public:
     virtual bool init() override;
@@ -12,5 +14,10 @@ public:
     virtual kern_return_t NewUserClient(uint32_t type, IOUserClient **userClient) override;
     kern_return_t Command(uint64_t selector, IOUserClientMethodArguments *args, IOUserClient *client) LOCALONLY;
     kern_return_t ClientClosed(IOUserClient *client) LOCALONLY;
+    void SetupEvents() LOCALONLY;
+    kern_return_t StartStream(IOUserClient *client,uint32_t ringMiB) LOCALONLY;
+    kern_return_t StopStream() LOCALONLY;
+    virtual void InterruptEvent(OSAction *action,uint64_t count,uint64_t time) TYPE(IOInterruptDispatchSource::InterruptOccurred);
+    virtual void TimerEvent(OSAction *action,uint64_t time) TYPE(IOTimerDispatchSource::TimerOccurred);
 };
 #endif
