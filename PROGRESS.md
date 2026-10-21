@@ -58,7 +58,7 @@ mapping blocker is present for the tested development setup.
 
 First real VHS RF milestone, 2026-10-21: user supplied a coax RF tap with a 68 nF
 series capacitor; C31 intact. Idle reconnection verified. V8 captured 1 s then
-10 s using VMUX1/level0/sixdb0/offset8/AGC1 without driver changes. VHS-Decode
+10 s using VMUX1/level 0/sixdb 0/offset8/AGC1 without driver changes. VHS-Decode
 PAL VHS at nominal28.636363MHz decoded 48 and 498 fields respectively. Exported
 colour video was visually verified, including frames near 1/5/9 s in the 10 s
 recording. The primary end-to-end path is demonstrated for a short real RF capture.
@@ -67,3 +67,19 @@ No physical or CX23885 changes, no security changes, no publication.
 A subsequent 60 s RF stability capture completed; final diagnostics are recorded
 in docs/RF-FIRST-CAPTURE.md. Remaining work is multi-minute/archival reliability,
 remaining failure paths, loading assessment and signal/gain quality evaluation.
+
+Second one-minute RF test: new tape section was confirmed by the user as PAL
+S-VHS/S-VHS ET. Raw capture completed at the same conservative v8 settings,
+1,718,181,780 bytes, 25 wraps, no reported DMA errors or overruns, verified stop
+and PCI command 0000. Full-frame decoding must use the appropriate tape format.
+Default S-VHS decoding acquired only at source7.712 s; the documented
+`--use_saved_levels` option recovered near-start acquisition in a bounded probe.
+Full S-VHS rerun with `--use_saved_levels` completed: 2,998 fields, no decoder
+errors/warnings or duplicate flags, 1,499 frames/59.96 s in the normal FFV1 export.
+Colour samples near 1/30/58 s visually verified. 364 decoder-detected dropout
+segments remain, and the user reports rare tears despite improved stability.
+Those tears have not been attributed to weak signal, C31 or DMA.
+Results: docs/RF-ONE-MINUTE.md. MP4 creation cancelled at the user's request.
+User plans C31 removal for a controlled comparison; no modification yet verified.
+The SSD retains 85 GiB available. New read-only check_decode.py validates TBC byte
+counts, sequence/parity and diagnostic flags on actual generated TBC files. Original raw files and upstream references unchanged.

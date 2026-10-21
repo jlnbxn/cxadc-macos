@@ -144,7 +144,7 @@ loss. Stop verified, guard intact, transfer status zero, PCI command restored to
 0000. The ten-second sample codes span 60..196; no rail clipping. No calibrated
 sampling-clock measurement or authoritative dropped-sample counter exists.
 
-Baseline CVBS settings VMUX1/level0/sixdb0 show sync-tip mean ~72.45, porch ~100.05,
+Baseline CVBS settings VMUX1/level 0/sixdb 0 show sync-tip mean ~72.45, porch ~100.05,
 threshold-estimated line period ~63.936 us (~15,640.5 Hz using the nominal clock),
 and chroma-band peak ~4.43407 MHz. These are approximate first-second diagnostics,
 not a precise PAL timing or clock calibration. VMUX0 also receives RCA. Sixdb1
@@ -160,9 +160,9 @@ preserves upstream. No CVBS decoding/filtering is added to the driver.
 Built pinned VHS-Decode 177b505 in an isolated Python 3.12 environment from a Git
 archive under build/; original reference checkout unchanged. Verified help and
 ran `cvbs-decode --frequency 28.636363 --pal -A INPUT.u8 OUTPUT`. The 5 s decode
-contains 225 fields with decodeFaults=0, syncConf45; startup skipped ~0.486 s.
+contains 225 fields with decodeFaults=0, syncConf=45; startup skipped ~0.486 s.
 The 10 s decode contains 498 fields with decodeFaults=0; 52 have syncConf100 and
-446 syncConf45. Both emitted a startup missing-data warning. This is a decoder
+446 syncConf=45. Both emitted a startup missing-data warning. This is a decoder
 observation, not evidence establishing a DMA loss count. A single-field monochrome
 preview was visually inspected and shows recognizable source imagery.
 
@@ -173,7 +173,7 @@ attachment snapshot check pass. A further real 2 s capture verified the CLI's
 idle-sleep assertion appears during capture and is released after exit0. The first
 agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
 the permitted outside-sandbox run succeeded. No security settings were changed.
-Idle defaults restored to AGC1/VMUX1/level0/sixdb0/offset8, PCI command0000,
+Idle defaults restored to AGC1/VMUX1/level 0/sixdb 0/offset8, PCI command0000,
 videoDMA0, running0, stop_verified1, quarantine0. Forced sleep, disconnection,
 disk-full and archival durations remain untested. At this milestone VHS RF was
 still pending; the subsequent successful RF test is recorded below.
@@ -233,3 +233,22 @@ produced recognizable colour video, inspected at multiple points in the ten-seco
 recording. This establishes initial short-duration end-to-end RF success.
 Multi-minute/archival reliability, exact clock, calibrated signal quality, loading,
 forced sleep and active disconnection remain unverified. No zero-loss claim.
+
+## Full-minute PAL S-VHS and TBC validation
+
+See [docs/RF-ONE-MINUTE.md](docs/RF-ONE-MINUTE.md). New real RF capture: 60 s,
+1,718,181,780 bytes, 25 wraps, no reported DMA faults/overruns, verified teardown.
+After the user clarified S-VHS/S-VHS ET, a VHS-mode run was interrupted. Default
+S-VHS and a bounded ET probe failed to acquire the first 7.7 s; the documented
+`--use_saved_levels` option recovered near-start acquisition. The full corrected
+S-VHS run produced 2,998 fields with no log warnings/errors or duplicate flags;
+TBC sizes and metadata agree. Export: 1,499 frames, 59.96 s, 928×576, 25 fps, FFV1.
+No dropout correction applied. 364 detector-reported dropout segments remain.
+Colour frames near 1/30/58 s visually verified. The user reports rare tears; their
+cause is unverified. No uncorrected/corrected quantitative TBC benchmark or
+calibrated SNR claim. All-fields syncConf=45 is a heuristic, not 45% success.
+New check_decode.py ran successfully on actual 1 s/10 s RF, 10 s CVBS, full S-VHS
+and bounded ET/level probes; py_compile and git diff checks pass. No driver change
+required and no new native-driver build claimed. MP4 was cancelled, not generated.
+C31 remains intact in this before-modification baseline. Idle hardware is stopped
+with PCI command 0000 and no quarantine.

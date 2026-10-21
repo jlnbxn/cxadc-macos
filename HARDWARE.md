@@ -96,10 +96,17 @@ verified usable for RCA, not uniquely mapped. No clock or electrical gain
 calibration is inferred from the decoder result.
 
 First RF test, 2026-10-21: after idle enclosure reconnection, the endpoint and v8
-DriverKit driver reattached and reported PCIcommand0000/DMAoff/no quarantine.
+DriverKit driver reattached and reported PCI command 0000/DMAoff/no quarantine.
 User reports JVC playback RF test point → coax → card RCA, with a 68 nF ceramic
 series capacitor near the test point. C31 remains intact. Wiring is described as
 loose. This tap construction is user-reported, not physically inspected or
 electrically calibrated; VCR output loading remains unverified. A playing VHS
 tape produced real RF samples that VHS-Decode decoded into recognizable colour
 PAL video. This is distinct from the previous MiniDV CVBS test.
+
+Second RF section was confirmed as PAL S-VHS/S-VHS ET by the user. With C31
+still intact, a full 60 s raw capture and near-full-minute S-VHS decode/export
+succeeded at the same level 0/sixdb 0 settings. The user plans C31 removal next.
+That physical change remains pending until reported; the saved minute is the
+before-modification baseline. Existing observations that RCA reached VMUX0/1
+are consistent with the pinned white-card C31 input-bridging description.

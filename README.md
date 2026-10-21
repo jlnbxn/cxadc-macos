@@ -117,3 +117,17 @@ for exact hardware context, results and limitations. The test validates this
 short-duration end-to-end path; electrical loading and archival quality are not
 thereby certified. The first recognizable RF result was obtained without increasing gain or
 modifying C31.
+
+For the subsequently tested PAL S-VHS recording, use the S-VHS decoder profile.
+On that recording the supported level-reuse option recovered acquisition from
+the beginning; it does not change the captured ADC samples:
+
+```sh
+vhs-decode --frequency 28.636363 --system PAL --tape_format SVHS --use_saved_levels --threads 2 rf_test.u8 rf_test_svhs
+python3 tools/check_decode.py rf_test_svhs.tbc.json
+```
+
+Use the tape's actual recording format, not merely the cassette label. See
+[the one-minute S-VHS/TBC report](docs/RF-ONE-MINUTE.md) for the complete test and
+decoder diagnostics. `check_decode.py` checks metadata and TBC byte counts; its
+flags are not an authoritative hardware loss count or a calibrated SNR test.
