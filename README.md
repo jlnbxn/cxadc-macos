@@ -131,3 +131,9 @@ Use the tape's actual recording format, not merely the cassette label. See
 [the one-minute S-VHS/TBC report](docs/RF-ONE-MINUTE.md) for the complete test and
 decoder diagnostics. `check_decode.py` checks metadata and TBC byte counts; its
 flags are not an authoritative hardware loss count or a calibrated SNR test.
+
+A subsequent real one-minute capture after user-reported C31 removal also decoded
+successfully. Its [matched-scene comparison](docs/C31-COMPARISON.md) shows mixed
+diagnostics and unchanged ADC span; a major quality gain or cure for rare tears
+is not established. The general raw capture engine and decoder settings remained
+unchanged. No MP4 was requested or generated.

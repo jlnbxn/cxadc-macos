@@ -115,7 +115,14 @@ Post-C31 state, 2026-10-21: user reports successful capacitor removal and card
 reattachment. Physical removal is user-reported, not visually inspected by the
 agent. Read-only enumeration confirms the same endpoint14f1:8800/subsystem
 4e4f:4553 at4:0:0, BAR0 size16 MiB and driver v8/API5 attached. Live status:
-PCI command0000, videoDMA0, running0, no quarantine or reported error. ADC
+PCI command0000, video DMA=0, running=0, no quarantine or reported error. ADC
 initialized0 and cleared stream counters are consistent with fresh attachment;
 no post-modification capture has run yet. Internal SSD has85 GiB available.
 The existing intact-C31 captures remain the before-modification baseline.
+
+Post-C31 real RF test completed with the same endpoint and unchanged settings:
+60 s raw capture, 1,718,181,780 bytes, 25 wraps, no reported DMA/overrun errors and
+verified idle teardown. User-reported removal is now associated with genuine
+captured data; the physical component itself was not inspected by the agent.
+ADC span stayed 97..120. Matched decoded-scene diagnostics are mixed; no clear
+amplitude or overall quality improvement is established. See docs/C31-COMPARISON.md.

@@ -148,7 +148,7 @@ Baseline CVBS settings VMUX1/level 0/sixdb 0 show sync-tip mean ~72.45, porch ~1
 threshold-estimated line period ~63.936 us (~15,640.5 Hz using the nominal clock),
 and chroma-band peak ~4.43407 MHz. These are approximate first-second diagnostics,
 not a precise PAL timing or clock calibration. VMUX0 also receives RCA. Sixdb1
-comparison clipped low and did not achieve field lock; sixdb0 remains default.
+comparison clipped low and did not achieve field lock; sixdb 0 remains default.
 
 The upstream-enabled ADC AGC configuration initially failed CVBS field lock
 (0-byte TBC, despite decoder exit 0). Original Conexant INPUT_FORMAT bit13
@@ -170,11 +170,11 @@ V8 DMA self-test succeeded using the existing interrupt source; a subsequent
 10 s capture confirms the test no longer disturbs capture interrupt registration.
 Native arm64 builds, ASan/UBSan RISC tests, three statistics unit tests and the
 attachment snapshot check pass. A further real 2 s capture verified the CLI's
-idle-sleep assertion appears during capture and is released after exit0. The first
+idle-sleep assertion appears during capture and is released after exit 0. The first
 agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
 the permitted outside-sandbox run succeeded. No security settings were changed.
-Idle defaults restored to AGC1/VMUX1/level 0/sixdb 0/offset8, PCI command0000,
-videoDMA0, running0, stop_verified1, quarantine0. Forced sleep, disconnection,
+Idle defaults restored to AGC 1/VMUX1/level 0/sixdb 0/offset8, PCI command0000,
+video DMA=0, running=0, stop_verified=1, quarantine=0. Forced sleep, disconnection,
 disk-full and archival durations remain untested. At this milestone VHS RF was
 still pending; the subsequent successful RF test is recorded below.
 
@@ -252,3 +252,18 @@ and bounded ET/level probes; py_compile and git diff checks pass. No driver chan
 required and no new native-driver build claimed. MP4 was cancelled, not generated.
 C31 remains intact in this before-modification baseline. Idle hardware is stopped
 with PCI command 0000 and no quarantine.
+
+## Post-C31 comparison
+
+[docs/C31-COMPARISON.md](docs/C31-COMPARISON.md) records the complete test.
+Actual capture passed byte/metadata checks, 25 wraps, 6,554 unique full blocks,
+no reported DMA faults/overruns and verified shutdown. Full S-VHS decode with
+unchanged `--use_saved_levels` completed: 2,994 fields, 1,497 frames, 59.88 s.
+Eighteen startup acquisition errors preceded lock at source ~0.114 s; no later
+log warnings/errors, duplicate flags or nonzero fault bitmaps. TBC byte counts
+agree; normal FFV1 export inspected at three matched scene times. No MP4.
+Content alignment found 4.44 s offset, yielding 55.44 s common material. Matched
+dropout segments 318→295, while bPSNR 39.7→38.6; ADC span 97..120 unchanged.
+These mixed diagnostics do not establish improved SNR, stronger ADC input or
+elimination of rare tears. No native code changes or new driver build required.
+Existing capture/decode diagnostics and git diff checks passed on the new files.

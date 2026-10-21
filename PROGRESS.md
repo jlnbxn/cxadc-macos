@@ -58,8 +58,8 @@ mapping blocker is present for the tested development setup.
 
 First real VHS RF milestone, 2026-10-21: user supplied a coax RF tap with a 68 nF
 series capacitor; C31 intact. Idle reconnection verified. V8 captured 1 s then
-10 s using VMUX1/level 0/sixdb 0/offset8/AGC1 without driver changes. VHS-Decode
-PAL VHS at nominal28.636363MHz decoded 48 and 498 fields respectively. Exported
+10 s using VMUX1/level 0/sixdb 0/offset8/AGC 1 without driver changes. VHS-Decode
+PAL VHS at nominal 28.636363MHz decoded 48 and 498 fields respectively. Exported
 colour video was visually verified, including frames near 1/5/9 s in the 10 s
 recording. The primary end-to-end path is demonstrated for a short real RF capture.
 Signal spans only codes97..120, so this is not optimal ADC range or quality proof.
@@ -90,3 +90,12 @@ idle, mastering/DMA off, no quarantine, fresh uninitialized ADC state. No
 post-modification data yet and no improvement claim.85 GiB remains available.
 Next: user cues the same S-VHS section, then capture60 s with unchanged settings
 and decode using `SVHS --use_saved_levels`; no MP4 requested.
+
+Post-C31 comparison completed: same v8 configuration captured another genuine
+60 s RF file, 1,718,181,780 bytes, 25 wraps, no reported DMA/overrun errors, verified
+stop and PCI command 0000. S-VHS level-reuse decode produced 2,994 fields and normal
+59.88 s colour FFV1 output. Startup excluded ~0.114 s; no later decoder errors.
+Matched scenes align by 4.44 s, covering 55.44 s common content. Dropout segments
+318→295, bPSNR diagnostic 39.7→38.6, ADC span 97..120 unchanged: mixed evidence,
+not a demonstrated major quality gain or identified cause of rare tears.
+Report: docs/C31-COMPARISON.md. No MP4, no driver/CX23885 edits, 79 GiB free.
