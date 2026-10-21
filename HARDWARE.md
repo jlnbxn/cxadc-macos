@@ -96,7 +96,7 @@ verified usable for RCA, not uniquely mapped. No clock or electrical gain
 calibration is inferred from the decoder result.
 
 First RF test, 2026-10-21: after idle enclosure reconnection, the endpoint and v8
-DriverKit driver reattached and reported PCI command 0000/DMAoff/no quarantine.
+DriverKit driver reattached and reported PCI command 0000/DMA off/no quarantine.
 User reports JVC playback RF test point → coax → card RCA, with a 68 nF ceramic
 series capacitor near the test point. C31 remains intact. Wiring is described as
 loose. This tap construction is user-reported, not physically inspected or
@@ -134,3 +134,9 @@ span increased from 99..119 at level 0 to 36..182 at level 31 with no rail sampl
 No instrumented loading measurement or tap-connected/disconnected comparison
 was performed. The amplifier/buffer question remains separate from code range.
 Hardware settings were restored to level 0/sixdb 0/offset 8/AGC 1 after testing.
+
+Full-tape storage preparation identified the user-designated external T7 as a
+mounted read/write APFS USB SSD. A new CXADC project folder and small temporary
+write/fsync preflight succeeded. No actual RF recording to T7 or 44-minute
+sustained test yet. See docs/FULL-TAPE-STORAGE.md for the measured capacity,
+footprint and staged workflow. No existing storage files or partitions changed.

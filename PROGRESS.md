@@ -121,3 +121,16 @@ This instance strongly suggests a repeatable tape/playback dropout rather than
 random wiring/DMA corruption. Other artifacts remain separate; amplifier need
 is not established by this screenshot. No new hardware actions or MP4.
 Report: docs/DROPOUT-INVESTIGATION.md.
+
+First full-tape preparation: 44-minute user estimate needs 75.6 GB raw plus 187.6 GB
+luma/chroma TBCs and ~40 GB corrected FFV1 if all retained (~303 GB nominal).
+User selected staged decode/export with verified generated-intermediate cleanup;
+raw/final files and metadata are retained. No cleanup yet; staged boundary
+handling remains to be implemented/verified.
+T7 APFS folder prepared at /Volumes/T7/CXADC/2026-10-21-tape-01. Small temporary
+write/fsync preflight passed (~774 MB/s); not a sustained or real capture test.
+T7 free space increased during checks from 171.6 GB to ~323 GB; no user-file
+deletion by agent. Unstarted 45-minute plan saved separately (77.32 GB raw,
+VMUX1/level 31/sixdb0/offset8/AGC1). Driver idle and default remains level 0.
+No full-tape capture started. Current acquisition is video RF only.
+Report: docs/FULL-TAPE-STORAGE.md.

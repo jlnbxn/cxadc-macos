@@ -157,3 +157,9 @@ For normal viewing leave dropout correction enabled; retain the uncorrected
 version for diagnosis. Correction conceals defects, without restoring original
 missing detail. See [the exact-frame investigation](docs/DROPOUT-INVESTIGATION.md).
 This result does not establish an amplifier requirement or diagnose every tear.
+
+For a full tape, budget the entire workflow: 44 minutes at stock rate is 75.6 GB
+raw, 187.6 GB for both TBCs and roughly 40 GB for the measured FFV1 profile.
+The [full-tape storage plan](docs/FULL-TAPE-STORAGE.md) records T7 preparation
+and the user's staged-workflow choice. No full-tape capture or chunk-boundary
+workflow is yet verified; the current acquisition path is video RF only.

@@ -300,3 +300,19 @@ This supports a repeatable tape/playback dropout, not a proven random cable,
 DMA or gain fault. VCR processing may explain the cleaner SCART comparison.
 No original-detail recovery, universal artifact fix or amplifier necessity claim.
 No new capture, driver code/build, physical change or MP4.
+
+## T7 full-tape storage preflight
+
+External T7 mounted read/write APFS. Created a new CXADC/2026-10-21-tape-01
+folder with raw/logs/exports/scratch; no existing files changed. Temporary 256 MiB
+write/fsync test passed at ~774 MB/s and its file was automatically removed.
+This is a storage test, not simulated RF or proof of long sustained throughput.
+No real capture to T7 yet. Driver v8 remains idle, command 0000, DMA off, no quarantine.
+Prepared an unstarted 45-minute plan, nominal 77.32 GB raw, candidate level 31.
+
+Space for 44 minutes retaining everything is nominal 303 GB (~330 GB budget),
+including 75.6 GB raw, 187.6 GB TBC pair and ~40 GB FFV1. T7 initially had 171.6 GB
+free, then showed ~323 GB on repeat checks; the agent deleted no user files.
+User selected staged decoding, with only generated TBCs discarded after
+verification; chunk-boundary validation remains unimplemented/unverified.
+See docs/FULL-TAPE-STORAGE.md. No full-tape capture has started.
