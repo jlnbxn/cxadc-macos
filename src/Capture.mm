@@ -2,6 +2,7 @@
 #import <Foundation/Foundation.h>
 #include <IOKit/IOKitLib.h>
 #include <IOKit/IOReturn.h>
+#include <IOKit/pwr_mgt/IOPMLib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <signal.h>
@@ -24,6 +25,13 @@ io_connect_t connectDriver();
 NSDictionary *statusJSON(const cxadc::Status &state);
 static NSString *hexCapture(uint32_t value){return [NSString stringWithFormat:@"0x%x",value];}
 static volatile sig_atomic_t requestedStop=0;
+struct IdleSleepGuard {
+    IOPMAssertionID assertion=kIOPMNullAssertionID;
+    IOReturn result;
+    IdleSleepGuard():result(IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,
+        kIOPMAssertionLevelOn,CFSTR("CXADC raw ADC capture"),&assertion)){}
+    ~IdleSleepGuard(){if(!result)IOPMAssertionRelease(assertion);}
+};
 static void stopSignal(int){requestedStop=1;}
 static bool writeAll(int fd,const void *data,size_t bytes) {
     const auto *p=static_cast<const uint8_t*>(data);
@@ -59,6 +67,7 @@ int runCapture(int argc,char **argv) {
         else if(!strcmp(key,"--level"))settings.level=uint32_t(number);
         else if(!strcmp(key,"--sixdb"))settings.sixdb=uint32_t(number);
         else if(!strcmp(key,"--center-offset"))settings.centerOffset=uint32_t(number);
+        else if(!strcmp(key,"--agc-enable"))settings.agcEnable=uint32_t(number);
         else if(!strcmp(key,"--ring-mib"))ringMiB=uint32_t(number);
         else return 64;
     }
@@ -66,6 +75,8 @@ int runCapture(int argc,char **argv) {
     uint64_t target=duration?uint64_t(duration*28636363.0):UINT64_MAX;
     if(!target)return 64;
     auto connection=connectDriver();if(!connection)return 1;
+    IdleSleepGuard awake;
+    if(awake.result){fprintf(stderr,"Idle-sleep assertion failed: 0x%x\n",awake.result);IOServiceClose(connection);return 1;}
     int fd=open(output,O_WRONLY|O_CREAT|O_EXCL|O_CLOEXEC,0644);
     if(fd<0){perror("create capture");IOServiceClose(connection);return 1;}
     std::string metadata=std::string(output)+".json";
@@ -75,12 +86,12 @@ int runCapture(int argc,char **argv) {
     NSMutableDictionary *record=[@{@"schema":@1,@"timestamp_utc":timestamp,@"chip":@"Conexant CX23880",@"pci_id":@"14f1:8800",
         @"format":@"u8",@"nominal_sample_rate_hz":@28636363,@"sample_clock_measured":@NO,
         @"requested_duration_seconds":@(duration),@"vmux":@(settings.vmux),@"level":@(settings.level),@"sixdb":@(settings.sixdb),
-        @"center_offset":@(settings.centerOffset),@"state":@"incomplete",@"written_bytes":@0,
-        @"dropped_sample_count":[NSNull null],@"continuity_claim":@"No authoritative dropped-sample count; errors and ambiguity terminate capture."} mutableCopy];
+        @"center_offset":@(settings.centerOffset),@"agc_enable":@(settings.agcEnable),@"state":@"incomplete",@"written_bytes":@0,
+        @"idle_sleep_prevention":@YES,@"dropped_sample_count":[NSNull null],@"continuity_claim":@"No authoritative dropped-sample count; errors and ambiguity terminate capture."} mutableCopy];
     if(!metadataWrite(meta,record)){perror("write initial metadata");close(meta);close(fd);IOServiceClose(connection);return 1;}
     signal(SIGINT,stopSignal);signal(SIGTERM,stopSignal);signal(SIGPIPE,SIG_IGN);
-    const uint64_t inputs[]={settings.vmux,settings.level,settings.sixdb,settings.centerOffset};
-    auto r=IOConnectCallMethod(connection,cxadc::configure,inputs,4,nullptr,0,nullptr,nullptr,nullptr,nullptr);
+    const uint64_t inputs[]={settings.vmux,settings.level,settings.sixdb,settings.centerOffset,settings.agcEnable};
+    auto r=IOConnectCallMethod(connection,cxadc::configure,inputs,5,nullptr,0,nullptr,nullptr,nullptr,nullptr);
     cxadc::Status before;size_t stateSize=sizeof(before);
     if(!r)r=IOConnectCallStructMethod(connection,cxadc::status,nullptr,0,&before,&stateSize);
     if(!r && (stateSize!=sizeof(before) || before.version!=cxadc::controlVersion || !before.initialized))r=kIOReturnUnsupported;

@@ -24,7 +24,7 @@ NSDictionary *statusJSON(const cxadc::Status &state) {
     return @{
         @"driver_api":@(state.version), @"driver_build":@(state.build), @"initialized":@(state.initialized), @"quarantined":@(state.quarantined),
         @"command_before":hexControl(state.command), @"command_restored":hexControl(state.restoredCommand),
-        @"vmux":@(state.settings.vmux), @"level":@(state.settings.level), @"sixdb":@(state.settings.sixdb), @"center_offset":@(state.settings.centerOffset),
+        @"vmux":@(state.settings.vmux), @"level":@(state.settings.level), @"sixdb":@(state.settings.sixdb), @"center_offset":@(state.settings.centerOffset), @"agc_enable":@(state.settings.agcEnable),
         @"nominal_sample_rate_hz":@28636363, @"sample_clock_measured":@NO, @"format":@"u8",
         @"video_dma":hexControl(state.videoDma), @"device_control_readback_undefined":hexControl(state.deviceControl),
         @"video_status":hexControl(state.videoStatus), @"pci_status":hexControl(state.pciStatus),
@@ -59,14 +59,15 @@ int runControl(int argc,char **argv) {
         else if(!strcmp(argv[i],"--level"))settings.level=uint32_t(value);
         else if(!strcmp(argv[i],"--sixdb"))settings.sixdb=uint32_t(value);
         else if(!strcmp(argv[i],"--center-offset"))settings.centerOffset=uint32_t(value);
+        else if(!strcmp(argv[i],"--agc-enable"))settings.agcEnable=uint32_t(value);
         else return 64;
     }
     if(!cxadc::valid(settings))return 64;
     auto connection=connectDriver();if(!connection)return 1;
     kern_return_t r=0;
     if(selector==cxadc::configure) {
-        const uint64_t input[]={settings.vmux,settings.level,settings.sixdb,settings.centerOffset};
-        r=IOConnectCallMethod(connection,selector,input,4,nullptr,0,nullptr,nullptr,nullptr,nullptr);
+        const uint64_t input[]={settings.vmux,settings.level,settings.sixdb,settings.centerOffset,settings.agcEnable};
+        r=IOConnectCallMethod(connection,selector,input,5,nullptr,0,nullptr,nullptr,nullptr,nullptr);
     }
     cxadc::Status state;size_t size=sizeof(state);
     auto statusResult=IOConnectCallStructMethod(connection,selector==cxadc::dmaCheck?cxadc::dmaCheck:cxadc::status,nullptr,0,&state,&size);

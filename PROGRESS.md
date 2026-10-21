@@ -12,10 +12,10 @@ All four reference clones are complete, pinned and reviewed for the first milest
 see references/manifest.json and docs/REFERENCES.md. Tracked upstream content is unchanged.
 
 After Open, legacy interrupt routing is exposed and DriverKit reports level type;
-actual delivery remains untested. Primary uncertainty: Linux requires more
+at Stage A delivery was untested. Initial uncertainties: Linux requires more
 than counter polling for trustworthy resident data. Safe 32-bit IOVA allocation,
 coherency, engine cancellation and complete raw data integrity are untested.
-No genuine ADC bytes, clock measurement, RF capture or decode result exist yet.
+These were Stage A limits; subsequent hardware results below supersede them.
 
 Discovery/PCI attachment commit: `2d05277`. V2 register-probe result is a separate
 follow-up milestone. No DMA enabled. V1 replacement initially left the old instance
@@ -38,4 +38,15 @@ u8 plus JSON, configurable VMUX/level/sixdb/offset, bounded disk queue and real
 interrupt completion. Tested ring wrap (3 in one second with 8 MiB), 32-bit IOVAs,
 DMA guard and command restoration. No authoritative dropped-sample claim.
 See TESTING.md for exact counts, failures and cold small-ring startup limitation.
-CVBS decode/export and multi-minute reliability remain unverified.
+CVBS results follow below; multi-minute reliability remains unverified.
+
+Milestones committed: `1b78b14` ADC/readback plus 32-bit DriverKit mapping lifecycle;
+`4ea0fd5` genuine raw DMA streaming, interrupts, CLI and verified termination.
+Driver v8 adds optional documented ADC AGC gate control. With AGC disabled, real
+RCA MiniDV PAL captures decode: 225 fields from 5 s and 498 fields from 10 s,
+recognizable image visually inspected. No driver-side signal processing.
+A real 60 s capture wrote 1,718,181,780 bytes with 25 observed wraps and no reported
+DMA/overrun errors. No authoritative zero-loss claim. Temporary idle-sleep assertion
+is hardware-tested. Current idle reference defaults restored; master off.
+Next: finish external TBC inspection/export, multi-minute capture and remaining
+failure-path validation, then safely isolated VHS RF and actual VHS-Decode.

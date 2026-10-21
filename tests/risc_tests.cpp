@@ -26,4 +26,5 @@ int main() {
     cxadc::Write settings[19];assert(cxadc::rawSettings({1,0,0,8},settings)==18);
     assert(settings[0].value==0x16011 && settings[1].mask==0xfffffffe);
     assert(!cxadc::rawSettings({4,0,0,8},settings));
+    assert(cxadc::rawSettings({1,0,0,8,0},settings)==18 && settings[0].value==0x14011);
 }

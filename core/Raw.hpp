@@ -8,7 +8,7 @@ struct Write { uint32_t offset, value, mask=UINT32_MAX; };
 inline unsigned rawSettings(Settings s, Write (&out)[19]) {
     if (!valid(s)) return 0;
     const Write writes[] = {
-        {0x310104,(s.vmux<<14)|(1<<13)|0x01|0x10|0x10000},
+        {0x310104,(s.vmux<<14)|(s.agcEnable<<13)|0x01|0x10|0x10000},
         // Datasheet 101069A p6-72: bit 0 is read-only reserved, always 0.
         {0x310164,0x0f,0xfffffffe}, {0x310110,0xff00},
         {0x310188,(2048u<<17)|(2<<11)},

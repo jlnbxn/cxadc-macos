@@ -2,11 +2,11 @@
 #pragma once
 #include <stdint.h>
 namespace cxadc {
-inline constexpr uint32_t controlVersion=4;
-inline constexpr uint32_t driverBuild=7;
+inline constexpr uint32_t controlVersion=5;
+inline constexpr uint32_t driverBuild=8;
 enum Selector : uint64_t { status=0, configure=1, dmaCheck=2, startCapture=3, pull=4, stopCapture=5 };
-struct Settings { uint32_t vmux=1, level=0, sixdb=0, centerOffset=8; };
-inline bool valid(Settings s) { return s.vmux<4 && s.level<32 && s.sixdb<2 && s.centerOffset<256; }
+struct Settings { uint32_t vmux=1, level=0, sixdb=0, centerOffset=8, agcEnable=1; };
+inline bool valid(Settings s) { return s.vmux<4 && s.level<32 && s.sixdb<2 && s.centerOffset<256 && s.agcEnable<2; }
 struct StreamStats {
     uint64_t interrupts=0,completedPages=0,deliveredBytes=0,wraps=0;
     uint64_t startedNS=0,stoppedNS=0;

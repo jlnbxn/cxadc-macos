@@ -7,9 +7,9 @@
 | Native arm64 PCI CLI | yes | yes, warnings as errors | yes | identifies 14f1:8800 |
 | Exact-match DriverKit probe | yes | yes | yes | PCI config/BAR and v2 MMIO |
 | Ad hoc development host | yes | yes | yes | activated/enabled |
-| ADC initialization | no | — | — | no |
-| DMA/RISC capture | no | — | — | no |
-| Streaming / file capture | no | — | — | no |
+| ADC initialization | yes | yes | yes | readback verified |
+| DMA/RISC capture | yes | yes | yes | genuine ADC, IRQ, wrap and stop |
+| Streaming / file capture | yes | yes | yes | through 60 s CVBS |
 | RF input / VHS-Decode | no | — | — | no |
 
 Before activation, CLI `--info` returned the real endpoint at `4:0:0`, no attached driver,
@@ -20,9 +20,9 @@ An initial CLI compile error (void pointer conversion) was corrected before the
 successful build. SDK paths include `System/DriverKit`; a first inspection at the
 macOS-style framework path failed and was corrected.
 
-Safe stages remaining: static ADC initialization, private DMA
-mapping while engines off, verified completion/teardown, one-second capture, 10 s,
-60 s, 30–60 minutes, isolated RF input, then actual PAL VHS/S-VHS decoding.
+Remaining acceptance work: multi-minute/30–60-minute captures, untested failure
+paths, isolated RF input, then actual PAL VHS/S-VHS decoding. Earlier Stage A
+observations below are historical; Stage B results follow.
 No synthetic sample data may count as hardware evidence. Signal statistics cannot
 prove correct analog capture. Real RF must await resolved isolation and loading.
 
@@ -33,7 +33,7 @@ was off. CLI JSON exposed the immutable snapshot. No DMA or config/MMIO writes.
 Unsupported capture arguments returned usage and created no file.
 
 V2: actual 13-register snapshot succeeded with PCI command `0000 → 0002 → 0000`,
-video DMA control and both interrupt masks zero, known RISC enable clear. No
+video DMA control and both interrupt masks zero, RISC readback undefined (write-only). No
 status acknowledgements, ADC initialization or DMA. After Open, legacy interrupt
 controller/specifier properties appeared; delivery remains untested.
 `python3 scripts/check-probe.py` checks the actual snapshot, including command
@@ -114,7 +114,7 @@ sample duration. Timing includes startup/teardown and does not calibrate the clo
 
 Hashes plus RISC counter observations detect several failure modes; they do not
 prove analog sample order or zero loss. Dropped-sample count remains null. No RF
-input or VHS-Decode acceptance test has been attempted. CVBS-Decode is next.
+input or VHS-Decode acceptance test has been attempted. CVBS-Decode results follow below.
 
 
 Hardware cancellation tests on v7 (real PAL CVBS data, 64 MiB ring):
@@ -125,3 +125,56 @@ event, stopped the hardware, then returned failed metadata/exit 1 after SIGCONT.
 All three independently verified command 0000, video DMA off, stop verification,
 no quarantine, and transfer status zero. No unrelated process was signalled.
 These are consumer cancellation/overrun tests, not disk-full or unplug tests.
+
+## Sustained CVBS and decoder validation — driver v8 / API 5
+
+Real RCA PAL input, card and C31 unmodified, nominal 28.636363 MSPS:
+
+| Capture | Bytes | IRQ callbacks | Observed wraps | Result |
+| --- | ---: | ---: | ---: | --- |
+| v7 CVBS, 60 s | 1,718,181,780 | 6,556 | 25 | complete, no reported DMA/overrun errors |
+| v8 AGC disabled, 5 s | 143,181,815 | 548 | 2 | decoded 225 PAL fields |
+| v8 AGC disabled, 10 s | 286,363,630 | 1,094 | 4 | decoded 498 PAL fields |
+
+All 6,554 full 256 KiB chunks in the 60 s capture and all 1,092 in the v8 10 s
+capture were unique. This exposes stale blocks, but does not prove zero sample
+loss. Stop verified, guard intact, transfer status zero, PCI command restored to
+0000. The ten-second sample codes span 60..196; no rail clipping. No calibrated
+sampling-clock measurement or authoritative dropped-sample counter exists.
+
+Baseline CVBS settings VMUX1/level0/sixdb0 show sync-tip mean ~72.45, porch ~100.05,
+threshold-estimated line period ~63.936 us (~15,640.5 Hz using the nominal clock),
+and chroma-band peak ~4.43407 MHz. These are approximate first-second diagnostics,
+not a precise PAL timing or clock calibration. VMUX0 also receives RCA. Sixdb1
+comparison clipped low and did not achieve field lock; sixdb0 remains default.
+
+The upstream-enabled ADC AGC configuration initially failed CVBS field lock
+(0-byte TBC, despite decoder exit 0). Original Conexant INPUT_FORMAT bit13
+AGCEN is explicitly documented: clearing only this gate via `--agc-enable 0`
+produced recognizable decoded video. All other raw registers remain the pinned
+Linux configuration. The optional setting is recorded in status/sidecar; default1
+preserves upstream. No CVBS decoding/filtering is added to the driver.
+
+Built pinned VHS-Decode 177b505 in an isolated Python 3.12 environment from a Git
+archive under build/; original reference checkout unchanged. Verified help and
+ran `cvbs-decode --frequency 28.636363 --pal -A INPUT.u8 OUTPUT`. The 5 s decode
+contains 225 fields with decodeFaults=0, syncConf45; startup skipped ~0.486 s.
+The 10 s decode contains 498 fields with decodeFaults=0; 52 have syncConf100 and
+446 syncConf45. Both emitted a startup missing-data warning. This is a decoder
+observation, not evidence establishing a DMA loss count. A single-field monochrome
+preview was visually inspected and shows recognizable source imagery.
+
+V8 DMA self-test succeeded using the existing interrupt source; a subsequent
+10 s capture confirms the test no longer disturbs capture interrupt registration.
+Native arm64 builds, ASan/UBSan RISC tests, three statistics unit tests and the
+attachment snapshot check pass. A further real 2 s capture verified the CLI's
+idle-sleep assertion appears during capture and is released after exit0. The first
+agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
+the permitted outside-sandbox run succeeded. No security settings were changed.
+Idle defaults restored to AGC1/VMUX1/level0/sixdb0/offset8, PCI command0000,
+videoDMA0, running0, stop_verified1, quarantine0. Forced sleep, disconnection,
+disk-full, archival durations and VHS RF decoding remain untested.
+
+Milestone commits: `1b78b14` (ADC/readback and 32-bit mappings), `4ea0fd5`
+(genuine raw streaming, IRQs and teardown). Subsequent v8 CVBS validation is
+recorded in the next focused commit; use Git history for its full hash.

@@ -118,6 +118,7 @@ void CXADCDriver::SetupEvents() {
     IODispatchQueue *queue=nullptr;
     auto r=CopyDispatchQueue(kIOServiceDefaultQueueName,&queue);
     if(r){ivars->state.irqCreate=r;return;}
+    uint64_t type=0;IOInterruptDispatchSource::GetInterruptType(ivars->pci,0,&type);ivars->state.irqType=uint32_t(type);
     r=IOInterruptDispatchSource::Create(ivars->pci,0,queue,&ivars->irq);
     if(!r)r=CreateActionInterruptEvent(0,&ivars->irqAction);
     if(!r)r=ivars->irq->SetHandler(ivars->irqAction);
@@ -214,7 +215,7 @@ kern_return_t CXADCDriver::Command(uint64_t selector,IOUserClientMethodArguments
     if(args->completion || args->structureInput || args->structureInputDescriptor ||
        args->structureOutputDescriptor || args->scalarOutputCount)return kIOReturnBadArgument;
     bool output=selector==cxadc::status || selector==cxadc::dmaCheck;
-    if(selector>cxadc::dmaCheck || args->scalarInputCount!=(selector==cxadc::configure?4:0) ||
+    if(selector>cxadc::dmaCheck || args->scalarInputCount!=(selector==cxadc::configure?5:0) ||
        args->structureOutputMaximumSize!=(output?sizeof(cxadc::Status):0))return kIOReturnBadArgument;
     auto pci=ivars->pci; auto index=ivars->index;
     auto read=[&](uint32_t off){uint32_t value=~0u;pci->MemoryRead32(index,off,&value);return value;};
@@ -236,10 +237,10 @@ kern_return_t CXADCDriver::Command(uint64_t selector,IOUserClientMethodArguments
     if(!r && selector==cxadc::configure) {
         cxadc::Settings settings;
         auto input=args->scalarInput;
-        if(!input || input[0]>3 || input[1]>31 || input[2]>1 || input[3]>255)r=kIOReturnBadArgument;
+        if(!input || input[0]>3 || input[1]>31 || input[2]>1 || input[3]>255 || input[4]>1)r=kIOReturnBadArgument;
         else if(state.quarantined)r=kIOReturnNotReady;
         else {
-            settings={uint32_t(input[0]),uint32_t(input[1]),uint32_t(input[2]),uint32_t(input[3])};
+            settings={uint32_t(input[0]),uint32_t(input[1]),uint32_t(input[2]),uint32_t(input[3]),uint32_t(input[4])};
             cxadc::Write values[19];unsigned count=cxadc::rawSettings(settings,values);
             state.initialized=0;state.registerMismatch=0;
             for(unsigned i=0;i<count;++i) {
@@ -260,7 +261,7 @@ kern_return_t CXADCDriver::Command(uint64_t selector,IOUserClientMethodArguments
             IODispatchQueue *queue=nullptr;IOInterruptDispatchSource *source=nullptr;
             r=CopyDispatchQueue(kIOServiceDefaultQueueName,&queue);
             if(!r) {
-                state.irqCreate=IOInterruptDispatchSource::Create(pci,0,queue,&source);
+                state.irqCreate=ivars->irq?kIOReturnSuccess:IOInterruptDispatchSource::Create(pci,0,queue,&source);
                 if(source){source->Cancel(nullptr);source->release();}
                 queue->release();
             }

@@ -1,4 +1,4 @@
-# Capture architecture — implemented through driver v7
+# Capture architecture — implemented through driver v8
 
 The verified Stage A endpoint/BAR lifecycle remains in place. Attachment makes a
 bounded register snapshot, then leaves PCI command restored. An entitled native
@@ -9,7 +9,9 @@ that queue. Only the observed Conexant endpoint/subsystem matches.
 
 Static RAW8 configuration follows the pinned Linux CXADC sequence at stock PLL
 11000000/SCONV 20000. GPIO, tuner and decoder firmware are untouched. VMUX, level,
-sixdb and center offset remain general raw ADC controls. The driver performs no
+sixdb, center offset and the documented global ADC AGC gate remain general raw
+ADC controls. AGC defaults enabled to preserve Linux configuration; optional
+disable achieved field lock in the actual CVBS test. The driver performs no
 CVBS/RF-specific processing. Writable settings are read back; reserved output
 bit 0 is excluded based on the manufacturer datasheet. RUN_RISC is write-only,
 so its readback is not used to infer state.
@@ -33,13 +35,13 @@ reads GPCNT only after the event and rounds to the IRQ boundary. One full comple
 IRQ block is held back before exposing bytes. Pull checks producer distance both
 before and after copying to prepared staging, then CPU-maps the caller descriptor;
 caller memory is never passed to PerformOperation. There is no completion polling
-fallback in v7. Actual legacy interrupt delivery works on this observed macOS.
+fallback. Actual legacy interrupt delivery works on this observed macOS.
 
 A 5 ms watchdog checks errors, missing progress and consumer lag. An observation
 gap beyond half a ring time at a conservative 60 MSPS limit is ambiguous and fails
 capture. Modulo counters do not establish an authoritative dropped-sample count.
 The first cold 8 MiB run hit that conservative limit; later small-ring wrap tests
-passed. Default 64 MiB captures passed one/ten-second and CVBS tests.
+passed. Default 64 MiB captures passed one/ten/sixty-second and CVBS tests.
 
 The native CLI transfers full 256 KiB blocks into a 32-slot bounded writer queue.
 The disk thread is independent of hardware callbacks; queue exhaustion fails
@@ -48,7 +50,8 @@ to the nominal-rate target; delivered versus written counts remain separate.
 Ctrl-C stops hardware before the queue drains. SIGKILL user-client closure and a
 stalled consumer have also been hardware-tested. Metadata starts as incomplete,
 then records success/failure, requested settings, clock uncertainty, byte counts,
-IOVAs, IRQ/counter diagnostics, errors and stop verification. No stdout mode yet.
+IOVAs, IRQ/counter diagnostics, errors and stop verification. A temporary CLI idle-sleep assertion spans the capture lifetime; forced sleep
+is not thereby handled or verified. No stdout mode yet.
 
 Stop masks interrupts, disables video FIFO/RISC, writes RUN_RISC=0, waits for the
 documented VID_XFER_STATUS to clear, disables mastering, observes stable counters,

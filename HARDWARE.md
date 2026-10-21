@@ -76,8 +76,8 @@ Thus absent initial routing properties are not a proven interrupt limitation.
 All offsets/values above are hexadecimal. These are power-on/attachment observations,
 not the intended raw configuration. `MO_DEV_CNTRL2` notably equals the subsystem
 ID dword; do not substitute this readback for a documented reset value or infer
-undocumented bits. Its known RISC-enable bit 5 is clear. The other raw setup values
-have not been written. `mmio_valid` means the bounded reads did not return the API's
+undocumented bits. DEV_CNTRL2 is write-only, so its readback cannot establish RISC state. These
+were pre-configuration observations; Stage B subsequently applied raw settings. `mmio_valid` means the bounded reads did not return the API's
 all-ones failure sentinel; it does not prove analog signal fidelity or chip settings.
 
 
@@ -89,3 +89,8 @@ receives CVBS with C31 intact; no exclusive mapping is inferred. No physical car
 or VCR changes were made. Sixdb=0 follows the pinned CXADC control convention
 (bit 23=0); the old datasheet's INIT_6DB_VAL polarity description conflicts with
 the upstream off/on naming, so electrical boost calibration is still unverified.
+
+With the documented INPUT_FORMAT AGCEN gate disabled, real PAL RCA raw captures
+were decoded into recognizable video (225/498 fields from 5/10 s). VMUX1 is
+verified usable for RCA, not uniquely mapped. No clock or electrical gain
+calibration is inferred from the decoder result.

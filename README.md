@@ -1,9 +1,9 @@
 # CX23880 CXADC for macOS
 
-Native arm64 PCIDriverKit raw ADC capture for Conexant `14f1:8800`. Driver v7 has
+Native arm64 PCIDriverKit raw ADC capture for Conexant `14f1:8800`. Driver v8 has
 captured real unsigned 8-bit samples with disconnected inputs (1 and 10 seconds)
-and PAL MiniDV composite input on RCA (5 seconds). CVBS decoding and VHS RF
-acceptance are still pending. This is development software, not archival validation.
+and PAL MiniDV composite on RCA (through 60 seconds). CVBS-Decode produced a
+recognizable PAL picture from real captures. VHS RF acceptance remains pending. This is development software, not archival validation.
 
 ```sh
 ./scripts/build.sh
@@ -31,7 +31,7 @@ process death may leave the initial incomplete sidecar. Statistics go to stderr.
 File output is implemented; stdout streaming is not yet supported.
 
 Options: `--vmux 0..3`, `--level 0..31`, `--sixdb 0|1`, `--center-offset 0..255`,
-`--ring-mib 8|64`. Defaults: VMUX1, level 0, sixdb 0, offset 8, 64 MiB ring. RCA
+`--agc-enable 0|1`, `--ring-mib 8|64`. Defaults: AGC enabled (Linux reference), VMUX1, level 0, sixdb 0, offset 8, 64 MiB ring. RCA
 CVBS has been observed on VMUX1 and VMUX0 with C31 intact; no physical modification
 is required for these tests. Sixdb follows Linux CXADC's logical control convention;
 electrical boost polarity/calibration remains unverified.
@@ -69,6 +69,21 @@ See [HARDWARE.md](HARDWARE.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 Project source is GPL-2.0-or-later. Builds, captures, decode outputs and dependency
 installations stay ignored. No remote or code publication is configured.
 
-Next: validate actual CVBS decoding and export, cancellation/failure paths and longer
-streaming, then an appropriately isolated VHS RF input. No RF tap or VCR wiring
+Next: multi-minute reliability and remaining failure paths, then an appropriately
+isolated VHS RF input. No RF tap or VCR wiring
 changes have been made.
+
+PAL CVBS on this unmodified card required disabling the documented global ADC AGC
+gate for reliable field lock. The default remains the pinned Linux configuration.
+This is a hardware setting, not CVBS processing inside the capture path:
+
+```sh
+./build/cxadc-capture --duration 10 --output cvbs_test.u8 --vmux 1 --level 0 --sixdb 0 --agc-enable 0
+cvbs-decode --frequency 28.636363 --pal -A cvbs_test.u8 cvbs_test
+```
+
+`--frequency` is MHz; these arguments were verified against the pinned decoder's
+help and executed on genuine captures. Inspect the TBC and JSON, not just exit
+status: unsuccessful field lock can still return exit 0. Decoder startup warnings
+and reduced sync confidence remain; see TESTING.md. The CLI holds a temporary
+idle-sleep assertion during capture. Forced sleep and hot unplug remain untested.

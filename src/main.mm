@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
             fprintf(stderr, "Usage: cxadc-capture --list|--info|--status|--dma-check\n"
                 "  --configure [--vmux 0..3 --level 0..31 --sixdb 0|1 --center-offset 0..255]\n"
                 "  --output FILE.u8 [--duration SECONDS] [--vmux N --level N --sixdb N --center-offset N --ring-mib 8|64]\n"
+                "  --agc-enable 0|1 controls the documented AGC gate (default 1, Linux reference); 0 enabled this card's PAL CVBS decode.\n"
                 "Default gain=0, boost=0, offset=8, vmux=1 (connector unverified); no duration means Ctrl-C stop.\n");
             return argc==2 && !strcmp(argv[1],"--help")?0:64;
         }
