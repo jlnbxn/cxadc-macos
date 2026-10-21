@@ -1,0 +1,24 @@
+// !$*UTF8*$!
+{
+ archiveVersion = 1;
+ classes = {};
+ objectVersion = 56;
+ objects = {
+  A00000000000000000000001 = {isa = PBXProject; buildConfigurationList = A00000000000000000000002; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = A00000000000000000000003; productRefGroup = A00000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A00000000000000000000005); };
+  A00000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  A00000000000000000000003 = {isa = PBXGroup; children = (A00000000000000000000010, A00000000000000000000011, A00000000000000000000004); sourceTree = "<group>"; };
+  A00000000000000000000004 = {isa = PBXGroup; children = (A00000000000000000000012); name = Products; sourceTree = "<group>"; };
+  A00000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A00000000000000000000007; buildPhases = (A00000000000000000000008, A00000000000000000000009); buildRules = (); dependencies = (); name = CXADCDriver; productName = CXADCDriver; productReference = A00000000000000000000012; productType = "com.apple.product-type.driver-extension"; };
+  A00000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; SDKROOT = driverkit; DRIVERKIT_DEPLOYMENT_TARGET = 23.0; ARCHS = arm64; }; name = Debug; };
+  A00000000000000000000007 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000013); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
+  A00000000000000000000008 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000014, A00000000000000000000015); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000009 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+  A00000000000000000000010 = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = driver/CXADCDriver.cpp; sourceTree = "<group>"; };
+  A00000000000000000000011 = {isa = PBXFileReference; lastKnownFileType = sourcecode.iig; path = driver/CXADCDriver.iig; sourceTree = "<group>"; };
+  A00000000000000000000012 = {isa = PBXFileReference; explicitFileType = "wrapper.driver-extension"; path = CXADCDriver.dext; sourceTree = BUILT_PRODUCTS_DIR; };
+  A00000000000000000000013 = {isa = XCBuildConfiguration; buildSettings = {PRODUCT_NAME = CXADCDriver; PRODUCT_BUNDLE_IDENTIFIER = com.example.CXADC.Driver; INFOPLIST_FILE = driver/Info.plist; CODE_SIGN_ENTITLEMENTS = driver/Driver.entitlements; CODE_SIGN_STYLE = Manual; SKIP_INSTALL = YES; OTHER_LDFLAGS = ("$(inherited)", "-framework", DriverKit, "-framework", PCIDriverKit); OTHER_CPLUSPLUSFLAGS = ("$(inherited)", "-Wshadow", "-Werror=shadow"); GCC_WARN_64_TO_32_BIT_CONVERSION = YES; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; }; name = Debug; };
+  A00000000000000000000014 = {isa = PBXBuildFile; fileRef = A00000000000000000000010; };
+  A00000000000000000000015 = {isa = PBXBuildFile; fileRef = A00000000000000000000011; };
+ };
+ rootObject = A00000000000000000000001;
+}

@@ -1,0 +1,14 @@
+.DS_Store
+.DS_Store
+/build/
+/artifacts/
+/references/*/
+*.u8
+*.raw
+*.rf
+*.mov
+*.mp4
+*.mobileprovision
+*.provisionprofile
+*.p12
+*.pem
