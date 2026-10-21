@@ -13,7 +13,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>4</string>
 	<key>IOKitPersonalities</key>
 	<dict>
 		<key>CXADC</key>
@@ -34,6 +34,13 @@
 			<string>IOPCIDevice</string>
 			<key>IOUserClass</key>
 			<string>CXADCDriver</string>
+			<key>IOUserClientProperties</key>
+			<dict>
+				<key>IOClass</key>
+				<string>IOUserUserClient</string>
+				<key>IOUserClass</key>
+				<string>CXADCUserClient</string>
+			</dict>
 			<key>IOUserServerName</key>
 			<string>com.example.CXADC.Driver</string>
 		</dict>

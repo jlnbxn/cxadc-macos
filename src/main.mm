@@ -3,6 +3,7 @@
 #include <IOKit/IOKitLib.h>
 #include <cstring>
 #include "../common/Probe.hpp"
+int runControl(int argc,char **argv);
 
 static NSString *hex(uint64_t value) {
     return [NSString stringWithFormat:@"0x%llx", (unsigned long long)value];
@@ -39,6 +40,7 @@ static NSDictionary *probeJSON(NSData *data) {
 }
 int main(int argc, char **argv) {
     @autoreleasepool {
+        if(argc>=2 && (!strcmp(argv[1],"--configure") || !strcmp(argv[1],"--dma-check") || !strcmp(argv[1],"--status")))return runControl(argc,argv);
         if (argc != 2 || (strcmp(argv[1], "--list") && strcmp(argv[1], "--info"))) {
             fprintf(stderr, "Usage: cxadc-capture --list|--info\nStage A only: capture and ADC configuration are not implemented.\n");
             return 64;

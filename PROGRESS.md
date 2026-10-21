@@ -22,3 +22,11 @@ follow-up milestone. No DMA enabled. V1 replacement initially left the old insta
 attached; explicit deactivation detached it. macOS reported reboot-required for
 retirement, but v2 activation/attachment subsequently succeeded without reboot.
 No driver processes were killed and no security setting changed.
+
+Stage B: native user client, static ADC configuration and private 32-bit DMA mapping
+self-test implemented and verified on real hardware with mastering off. V4 passed
+all 18 ADC readbacks after correcting reserved output bit 0. A 64 MiB mapping at
+IOVA 80000000 and RISC mapping at 84004000 passed the supported DriverKit memory
+lifecycle and CPU round-trip. Actual RISC capture/interrupt delivery remains next.
+The manufacturer datasheet corrects Stage A: DEV_CNTRL2 is write-only; its readback
+cannot establish RISC state. No physical modifications or CX23885 edits.

@@ -103,3 +103,11 @@ needed, and check out that commit detached. For the large wiki use
 `git clone --depth 1 --filter=blob:none --no-checkout URL references/cxadc-wiki`,
 then `git -C references/cxadc-wiki sparse-checkout set --no-cone '/*.md' '/*.markdown'`
 and check out the pinned commit. Never patch source in the reference directories.
+
+Stage B also inspected the original Conexant 101069A (August 2002), obtained from
+https://datasheet.octopart.com/CX23883-39-Conexant-datasheet-42899180.pdf .
+Local PDF/text/page renders stay ignored under artifacts/. Relevant pages were
+visually inspected: 6-47 (write-only RUN_RISC), 6-86 (video transfer-in-progress);
+6-72 defines output bit 0 as reserved read-only zero. It is not valid to read
+RUN_RISC back as if it were an ordinary RW register. The pinned Windows bitfields
+independently mark output bit 0 reserved.

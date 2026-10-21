@@ -43,3 +43,35 @@ time, not current state.
 Offline analyzer tests: uniform 0..255 histogram with analytic mean/variance,
 constant input with zero AC RMS, and empty-input rejection: all 3 passed. These
 fixtures are synthetic arithmetic tests, not RF data or DMA evidence.
+
+## Stage B — static ADC and mapping bring-up
+
+2026-10-21, driver bundles v3/v4 (control API 3):
+
+- Actual user-client status RPC works outside the agent sandbox. Sandbox access
+  failed with `0xe00002e2`; the same signed CLI outside it succeeded. No new
+  signing profile or security-setting change was needed.
+- `--dma-check`: 64 MiB sample mapping, one segment at device IOVA `80000000`;
+  contiguous RISC mapping at `84004000`; 32-bit bounds, lengths and alignment
+  checked. Prepared driver-owned staging memory round-tripped a 16 KiB pattern
+  using IODMACommand PerformOperation. CompleteDMA succeeded. Bus mastering stayed
+  off and PCI command was restored to `0000`. This is not hardware DMA evidence.
+- IOInterruptDispatchSource::Create on the actual legacy endpoint returned success,
+  type level. Contrary to the SDK's MSI-only limitation statement, source creation
+  works here; enable/actual interrupt delivery still requires testing.
+- First raw ADC readback stopped at OUTPUT_FORMAT: Linux writes `0f`, chip reads
+  `0e`. Manufacturer datasheet 101069A p6-72 marks bit 0 read-only/reserved zero.
+  V4 preserves Linux's write but excludes that bit from equality validation.
+- All 18 static raw ADC writes then passed readback: VMUX1, level 0, boost off,
+  center offset 8, PLL 11000000, SCONV 20000, RAW8. No DMA started. The nominal
+  rate is configured, not measured; no connector mapping is yet established.
+- Manufacturer datasheet p6-47 defines DEV_CNTRL2 as **write-only**. Earlier Stage A
+  interpretations of its readback as RISC-enable state were invalid. They must
+  not be used for stop verification. P6-86 defines VID_XFER_STATUS bit 0 as video
+  transfer-in-progress. Capture teardown will use that, writable engine control,
+  stopped counter and PCI command; no CX23885 TC_REQ assumptions.
+- Offline RISC tests (ASan/UBSan) pass: two-word 32-bit WRITE encoding, SG boundary,
+  page counter increment/reset, interrupt period, backward wrap, invalid high/unaligned
+  addresses and ADC option bounds. This does not validate the hardware engine.
+
+Inputs confirmed disconnected by the user. No analog sample has been captured yet.
