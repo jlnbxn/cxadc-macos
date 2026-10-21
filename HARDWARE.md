@@ -110,3 +110,12 @@ succeeded at the same level 0/sixdb 0 settings. The user plans C31 removal next.
 That physical change remains pending until reported; the saved minute is the
 before-modification baseline. Existing observations that RCA reached VMUX0/1
 are consistent with the pinned white-card C31 input-bridging description.
+
+Post-C31 state, 2026-10-21: user reports successful capacitor removal and card
+reattachment. Physical removal is user-reported, not visually inspected by the
+agent. Read-only enumeration confirms the same endpoint14f1:8800/subsystem
+4e4f:4553 at4:0:0, BAR0 size16 MiB and driver v8/API5 attached. Live status:
+PCI command0000, videoDMA0, running0, no quarantine or reported error. ADC
+initialized0 and cleared stream counters are consistent with fresh attachment;
+no post-modification capture has run yet. Internal SSD has85 GiB available.
+The existing intact-C31 captures remain the before-modification baseline.

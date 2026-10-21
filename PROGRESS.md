@@ -83,3 +83,10 @@ Results: docs/RF-ONE-MINUTE.md. MP4 creation cancelled at the user's request.
 User plans C31 removal for a controlled comparison; no modification yet verified.
 The SSD retains 85 GiB available. New read-only check_decode.py validates TBC byte
 counts, sequence/parity and diagnostic flags on actual generated TBC files. Original raw files and upstream references unchanged.
+
+C31 comparison setup: user reports C31 removed and card reattached. Actual
+read-only PCI/driver checks passed on the same Conexant endpoint; v8/API5 is
+idle, mastering/DMA off, no quarantine, fresh uninitialized ADC state. No
+post-modification data yet and no improvement claim.85 GiB remains available.
+Next: user cues the same S-VHS section, then capture60 s with unchanged settings
+and decode using `SVHS --use_saved_levels`; no MP4 requested.
