@@ -144,3 +144,16 @@ successfully. This is a candidate for the next longer trial, not a new universal
 default. The CLI still defaults to conservative level 0. The user reported no
 visible SCART disturbance during the sweep. See [gain test results](docs/RF-GAIN-SWEEP.md)
 for the measurements and limits of the comparison.
+
+The pictured bright horizontal streak was traced to a repeatable RF dropout.
+Our earlier hardware-comparison exports deliberately disabled dropout correction.
+A separate standard export concealed that exact streak using the saved data:
+
+```sh
+tbc-video-export --profile ffv1 --threads 4 rf_test.tbc rf_test_corrected
+```
+
+For normal viewing leave dropout correction enabled; retain the uncorrected
+version for diagnosis. Correction conceals defects, without restoring original
+missing detail. See [the exact-frame investigation](docs/DROPOUT-INVESTIGATION.md).
+This result does not establish an amplifier requirement or diagnose every tear.

@@ -111,3 +111,13 @@ is the next longer-trial candidate; code defaults and idle state remain level 0.
 See docs/RF-GAIN-SWEEP.md. No driver/CX23885 edits, physical changes or MP4.
 Remaining: matched longer comparison, representative-tape clipping checks,
 archival-duration reliability and separate RF-loading/buffer assessment.
+
+Specific horizontal-streak diagnosis: matched the user's screenshot at 25.12 s
+in the first decoded minute. The same tape moment at 29.56 s post-C31 shows
+the same defect and matching RF-dropout coordinates. Standard dropout-corrected
+export visibly conceals the streak, whereas our diagnostic exports had explicitly
+disabled correction. Full corrected FFV1 minute retained; original raw unchanged.
+This instance strongly suggests a repeatable tape/playback dropout rather than
+random wiring/DMA corruption. Other artifacts remain separate; amplifier need
+is not established by this screenshot. No new hardware actions or MP4.
+Report: docs/DROPOUT-INVESTIGATION.md.

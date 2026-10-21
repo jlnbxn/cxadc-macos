@@ -201,7 +201,7 @@ changes. Help verified before execution:
 build/tbc-tools.app/Contents/MacOS/tbc-video-export --profile ffv1 --no-dropout-correct --threads 4 artifacts/cvbs-agc0-v8-10s-decoded.tbc artifacts/cvbs-agc0-v8-10s-export
 ```
 
-Exit0, completed in ~4.2 s. Export used automatic PAL TRANSFORM3D colour decoding
+Exit 0, completed in ~4.2 s. Export used automatic PAL TRANSFORM3D colour decoding
 and automatic field order (resolved TFF), no dropout correction. FFprobe counted
 249 video frames: FFV1, 928×576, yuv422p10le, 25/1 fps, top-field-first, duration
 9.96 s. File size 147,550,617 bytes. PNG frames at 1/5/9 s were visually inspected:
@@ -286,3 +286,17 @@ No full decode of intermediate levels 4/8/24. Level 31 is a longer-trial candida
 not globally qualified or proven to eliminate rare tears. Restored idle level 0,
 DMA/mastering off, stop_verified=1, no quarantine. No driver changes/build needed.
 Existing capture/decode checks and git diff checks pass. No MP4. 76 GiB free.
+
+## Screenshot streak and dropout correction
+
+[docs/DROPOUT-INVESTIGATION.md](docs/DROPOUT-INVESTIGATION.md) records the exact
+frame test. Screenshot matched the first decoded minute at 25.12 s; metadata
+flags affected lines. Same defect and near-matching dropout coordinates recur
+at 29.56 s in the post-C31 pass, accounting for its 4.44 s earlier start. A
+separate standard FFV1 export with dropout correction enabled completed and
+visibly concealed the exact streak. Original raw checksum unchanged. Full
+corrected export 59.96 s/1,499 frames; 346 concealments reported by exporter.
+This supports a repeatable tape/playback dropout, not a proven random cable,
+DMA or gain fault. VCR processing may explain the cleaner SCART comparison.
+No original-detail recovery, universal artifact fix or amplifier necessity claim.
+No new capture, driver code/build, physical change or MP4.
