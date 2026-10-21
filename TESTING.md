@@ -377,3 +377,34 @@ commands/state. No raw/TBC cleanup. `caffeinate -i` prevents idle system sleep.
 Syntax/help and actual launch/initial decoding verified. Export/low-space and
 interruption branches of this new runner remain untested; existing short DOC
 export itself was verified separately. State file in artifacts ends `.workflow.json`.
+
+## Full decode complete; DOC export resumed
+
+Full decode exited successfully at 22:18 local: 134,826 PAL fields, 67,413 frames,
+44:56.52 decoded duration. Luma and chroma each 95,795,221,260 bytes, matching
+declared field count exactly; field parity alternates throughout. Decoder
+reported 22,612 dropout segments in 8,812 fields and two replacement-field
+events. These are decoder diagnostics, not authoritative capture-loss counts.
+
+The original workflow stopped before export because its strict seqNo check
+rejected four metadata positions associated with those two events. Investigation
+of pinned `lddecode/core.py` readfield()/lastvalidfield writeout and
+`vhsdecode/process.py` shows that an inserted prior field retains its old metadata;
+the following flagged field was numbered before insertion. At output positions
+15,417 and 118,935, reused metadata equals the metadata two positions earlier;
+each is followed by a flagged duplicate with fault bit4. No other numbering
+mismatches. Original JSON/TBCs preserved, with no renumbering or sample edits.
+The referenced TBC-tools JSON reader appends fields in array order and getField()
+indexes that array, rather than sorting it by seqNo.
+
+`check_decode.py` now reports exact recognized filler patterns separately from
+unexplained mismatches; the runner permits the recognized pattern with count,
+parity and byte validation intact. Five focused metadata-fixture tests passed,
+including rejection of missing flags, modified copied metadata and unrelated
+numbering faults. Python compilation/help passed.
+
+Added `--export-existing` to resume validated TBC export without repeating decode
+or overwriting the original failed workflow record. Full FFV1 export started
+with default dropout correction, four threads and the existing 20 GB disk guard.
+New `.export-workflow.json` records this attempt; original `.workflow.json` is
+retained as failure evidence. Full export completion/visual review pending.

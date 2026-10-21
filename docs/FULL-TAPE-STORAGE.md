@@ -100,3 +100,11 @@ dropout-corrected FFV1 internally at
 It records commands/state in the adjacent `.workflow.json` and stops its child
 if the active output filesystem drops below 20 GB free. It does not delete any
 file. Full decode/export completion and visual review remain pending.
+
+The decode subsequently completed with 134,826 fields and matching 95.80 GB
+luma/chroma files. Its initial automatic export was blocked by an overly strict
+seqNo check around two decoder-inserted replacement fields. Exact pinned-source
+metadata reuse was verified; no JSON renumbering or sample edits were made.
+`--export-existing` now resumes from those validated TBCs, preserves the original
+failed state file and records a new `.export-workflow.json`. The full standard-DOC
+FFV1 export is underway internally; no intermediate cleanup has occurred.

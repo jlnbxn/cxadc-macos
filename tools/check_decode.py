@@ -9,6 +9,33 @@ from pathlib import Path
 import statistics
 
 
+def sequence_diagnostics(fields):
+    """Recognize pinned lddecode's reuse of old metadata for inserted filler.
+
+    readfield() writes a prior lastvalidfield tuple before the current field.
+    Its metadata retains the prior seqNo; the following flagged field's seqNo
+    was calculated before filler insertion. Preserve these facts, not renumber.
+    """
+    mismatches = {i for i, f in enumerate(fields) if f["seqNo"] != i + 1}
+    explained = set()
+    insertions = []
+    for i in sorted(mismatches):
+        if i in explained or i < 2 or i + 1 >= len(fields):
+            continue
+        filler, current = fields[i:i + 2]
+        if (filler == fields[i - 2] and filler["seqNo"] == i - 1
+                and current["seqNo"] == i + 1 and current.get("isDuplicateField")
+                and current.get("decodeFaults", 0) & 4
+                and filler["isFirstField"] != current["isFirstField"]):
+            explained.update((i, i + 1))
+            insertions.append({"inserted_output_position": i + 1,
+                               "reused_seqNo": filler["seqNo"],
+                               "following_output_position": i + 2})
+    return {"sequence_number_mismatch_count": len(mismatches),
+            "recognized_decoder_filler_insertions": insertions,
+            "unexplained_sequence_mismatch_positions": [i + 1 for i in sorted(mismatches - explained)]}
+
+
 def inspect(path):
     data = json.loads(path.read_text())
     video, fields = data["videoParameters"], data["fields"]
@@ -36,6 +63,7 @@ def inspect(path):
         "field_count": len(fields),
         "declared_count_matches": video.get("numberOfSequentialFields") == len(fields),
         "sequence_numbers_contiguous": [f["seqNo"] for f in fields] == list(range(1, len(fields) + 1)),
+        **sequence_diagnostics(fields),
         "sync_confidence_histogram": dict(Counter(f.get("syncConf") for f in fields)),
         "duplicate_field_flags": sum(bool(f.get("isDuplicateField")) for f in fields),
         "nonzero_decode_fault_bitmaps": faults,

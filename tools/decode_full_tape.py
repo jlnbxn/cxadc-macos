@@ -23,6 +23,8 @@ def main():
     parser.add_argument("raw", type=Path)
     parser.add_argument("tbc_prefix", type=Path)
     parser.add_argument("export_prefix", type=Path)
+    parser.add_argument("--export-existing", action="store_true",
+                        help="validate existing TBCs and export without repeating decode; keep previous workflow state")
     args = parser.parse_args()
     raw, tbc, export = (p.resolve() for p in (args.raw, args.tbc_prefix, args.export_prefix))
     metadata = json.loads(Path(str(raw) + ".json").read_text())
@@ -35,12 +37,14 @@ def main():
     for prefix in (tbc, export):
         if not prefix.parent.is_dir():
             raise ValueError(f"output directory missing: {prefix.parent}")
-    for name in (str(tbc) + ".tbc", str(tbc) + "_chroma.tbc", str(tbc) + ".tbc.json",
-                 str(tbc) + ".log", str(tbc) + ".console.txt", str(export) + ".mkv",
-                 str(export) + ".workflow.json", str(export) + ".console.txt"):
+    state_path = Path(str(export) + (".export-workflow.json" if args.export_existing else ".workflow.json"))
+    new_outputs = [str(export) + ".mkv", str(state_path), str(export) + ".console.txt"]
+    if not args.export_existing:
+        new_outputs += [str(tbc) + suffix for suffix in (".tbc", "_chroma.tbc", ".tbc.json", ".log", ".console.txt")]
+    for name in new_outputs:
         if Path(name).exists():
             raise ValueError(f"refusing existing output: {name}")
-    tbc_budget = math.ceil(duration * 50 + 2000) * 1135 * 313 * 2 * 2
+    tbc_budget = 0 if args.export_existing else math.ceil(duration * 50 + 2000) * 1135 * 313 * 2 * 2
     export_budget = math.ceil(raw_stat.st_size * .65)
     if tbc.parent.stat().st_dev == export.parent.stat().st_dev:
         required = [(tbc.parent, tbc_budget + export_budget + RESERVE)]
@@ -49,7 +53,6 @@ def main():
     for directory, needed in required:
         if shutil.disk_usage(directory).free < needed:
             raise ValueError(f"insufficient preflight headroom on {directory}: need {needed} bytes")
-    state_path = Path(str(export) + ".workflow.json")
     state = {"state": "prepared", "raw": str(raw), "raw_bytes": raw_stat.st_size,
              "nominal_duration_seconds": duration, "tbc_prefix": str(tbc),
              "export_prefix": str(export), "reserve_bytes": RESERVE,
@@ -88,14 +91,17 @@ def main():
                 raise RuntimeError(f"{phase} exited {code}; see {logfile}")
 
     try:
-        run([str(ROOT / "build/decode-venv/bin/vhs-decode"), "--frequency", "28.636363",
-             "--system", "PAL", "--tape_format", "SVHS", "--use_saved_levels",
-             "--threads", "2", str(raw), str(tbc)],
-            Path(str(tbc) + ".console.txt"), "decoding", tbc.parent)
+        if not args.export_existing:
+            run([str(ROOT / "build/decode-venv/bin/vhs-decode"), "--frequency", "28.636363",
+                 "--system", "PAL", "--tape_format", "SVHS", "--use_saved_levels",
+                 "--threads", "2", str(raw), str(tbc)],
+                Path(str(tbc) + ".console.txt"), "decoding", tbc.parent)
         result = inspect(Path(str(tbc) + ".tbc.json"))
         state["decode_check"] = result
-        if not result["declared_count_matches"] or not result["sequence_numbers_contiguous"]:
-            raise RuntimeError("decoded field count/sequence validation failed")
+        if not result["declared_count_matches"] or result["unexplained_sequence_mismatch_positions"]:
+            raise RuntimeError("decoded field count or unexplained sequence mismatch validation failed")
+        if result["same_output_parity_neighbors"]:
+            raise RuntimeError("decoded field parity does not alternate")
         if len(result["tbc_files"]) != 2 or not all(v["bytes_match_field_count"] for v in result["tbc_files"].values()):
             raise RuntimeError("luma/chroma TBC byte-count validation failed")
         # Dropout correction is enabled by omitting the diagnostic disable flag.

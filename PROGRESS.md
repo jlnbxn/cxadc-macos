@@ -155,3 +155,12 @@ FFV1 will be written internally. PAL/SVHS saved-level decode is running, locked
 after the pre-play lead-in. New disk-guarded runner automatically validates TBC
 byte counts then exports; full workflow has not yet completed/been verified.
 No generated TBCs or raw files deleted. See TESTING.md and docs/FULL-TAPE-STORAGE.md.
+
+Full decode completed: 134,826 fields/44:56.52, both TBCs95,795,221,260 bytes,
+matching field counts and alternating parity. Automatic export initially stopped
+on four seqNo mismatches caused by two pinned-decoder replacement-field events.
+Confirmed exact old-metadata reuse in the source and actual JSON; no data edited.
+Validation now recognizes only that exact pattern, with five focused tests.
+User requested export; resumed using `--export-existing`, standard DOC/FFV1,
+internal output and disk guard. Export currently running; final checks pending.
+Raw/TBCs and original failed workflow record retained.
