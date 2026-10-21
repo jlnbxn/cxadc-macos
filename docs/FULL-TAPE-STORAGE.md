@@ -82,3 +82,21 @@ shutdown. The first five seconds decoded into 250 PAL S-VHS fields. Detailed
 results and limitations are in TESTING.md. This supersedes the earlier
 "not yet verified" T7/one-minute gain status above, but does not establish
 full-tape reliability or clipping headroom for every tape section.
+
+## Full capture complete; full decode now underway
+
+The 45-minute raw recording completed: 77.32 GB, matching nominal byte count,
+no reported DMA/overrun/write errors, verified shutdown. User subsequently
+authorized immediate full decoding if space allows. Measured free space is
+244.17 GB on T7 and 81.03 GB internally. Full-length TBCs (up to ~192 GB at
+45 minutes) fit on T7 with headroom; expected ~41–50 GB final lossless export
+fits internally. This supersedes the staged-only plan: no chunk trimming or
+intermediate deletion is currently necessary.
+
+`tools/decode_full_tape.py` is running under `caffeinate -i`, writes full TBCs
+to T7 `scratch/tape01-pal-svhs-full`, and will automatically export standard
+dropout-corrected FFV1 internally at
+`artifacts/tape01-pal-svhs-full-dropout-corrected.mkv` after TBC byte validation.
+It records commands/state in the adjacent `.workflow.json` and stops its child
+if the active output filesystem drops below 20 GB free. It does not delete any
+file. Full decode/export completion and visual review remain pending.

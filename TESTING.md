@@ -345,3 +345,35 @@ Standard dropout-corrected FFV1 preview exported successfully: 125 frames,
 Inspected the frame at two seconds: recognizable colour garden/football scene.
 This checks one exported frame, not every frame or comparative image quality.
 Preview retained as artifacts/t7-preflight-level31-preview-export.mkv.
+
+## Full 45-minute T7 capture completed; full decode running
+
+2026-10-21: user requested capture before pressing play. Raw file:
+`/Volumes/T7/CXADC/2026-10-21-tape-01/raw/tape01-pal-svhs.u8`.
+v8/API5, VMUX1/level31/sixdb0/offset8/AGC1, 64 MiB ring. Requested 2,700 seconds,
+exactly 77,318,180,100 bytes verified against the complete sidecar and file stat.
+Host elapsed 2,700.284 seconds, 294,947 interrupt callbacks, 1,152 ring wraps;
+zero reported overruns, driver errors or writer errors. Stop verified, DMA off,
+PCI command restored to 0000, no quarantine. Idle level0 restored afterwards.
+No authoritative dropped-sample count or full-file continuity proof claimed.
+
+Selected 18 one-second ADC windows from start through second2699: no rail
+samples; typical programme windows codes35..181, means near120.7. Initial
+window near120.16/std0.87 is consistent with pre-play lead-in; last windows have
+lower AC energy. Sampling windows do not establish absence of clipping in every
+sample or identify all recorded tape content. Analysis saved in artifacts.
+
+At decode start T7 had 244.17 GB free and internal data volume 81.03 GB.
+Launched pinned PAL/SVHS decode, 28.636363 MHz, saved levels, two threads, full
+raw input. TBC prefix on T7: `scratch/tape01-pal-svhs-full`; eventual normal
+dropout-corrected FFV1 prefix internally: `artifacts/tape01-pal-svhs-full-dropout-corrected`.
+Initial lead-in produced field-acquisition errors; decoder subsequently locked
+(first logged source frame93) and is advancing normally. Full decode/export
+has not completed or been validated yet; no full-tape image-quality claim.
+
+New `tools/decode_full_tape.py` orchestrates decode, TBC byte-count checks and
+automatic standard-DOC export, with 20 GB free-space guards and recorded
+commands/state. No raw/TBC cleanup. `caffeinate -i` prevents idle system sleep.
+Syntax/help and actual launch/initial decoding verified. Export/low-space and
+interruption branches of this new runner remain untested; existing short DOC
+export itself was verified separately. State file in artifacts ends `.workflow.json`.

@@ -142,3 +142,16 @@ Five-second PAL S-VHS excerpt decoded to 250 fields without duplicate flags,
 parity errors or logged ERROR/WARNING. Raw and analysis retained on T7.
 Level31 now verified for this minute; remaining tape headroom and 45-minute
 stability remain unverified. Full-tape capture has not started.
+
+Full-tape capture milestone: 2,700 seconds completed on T7, exactly77,318,180,100
+bytes, 294,947 IRQ callbacks/1,152 wraps, no reported DMA/overrun/write errors,
+verified shutdown and PCI command restoration. Idle level0 restored. Raw remains
+intact; no authoritative zero-loss claim. Selected ADC windows across tape show
+no rail clipping, but the entire raw file has not yet been analyzed/checksummed.
+
+User authorized full decode if space permits. With 244.17 GB free on T7 and
+81.03 GB internally, full TBCs are being written to T7 and final standard-DOC
+FFV1 will be written internally. PAL/SVHS saved-level decode is running, locked
+after the pre-play lead-in. New disk-guarded runner automatically validates TBC
+byte counts then exports; full workflow has not yet completed/been verified.
+No generated TBCs or raw files deleted. See TESTING.md and docs/FULL-TAPE-STORAGE.md.
