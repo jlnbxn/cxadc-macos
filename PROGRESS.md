@@ -7,11 +7,18 @@ No remote configured; no code published. The HVR-1200 repository at
 
 Milestone 1: actual host/PCI discovery, isolated DriverKit target, native enumeration
 CLI and local host build. Exact endpoint/bridge IDs and BAR ranges documented in
-HARDWARE.md. Both native targets compile. Driver v1 attached and read PCI configuration/BAR successfully; MMIO correctly skipped with memory decoding off. The next test is bounded memory-decoding enable/read/restore.
-Reference acquisition/review is in progress; Linux and Windows clones complete,
-VHS-Decode and wiki full-history clones still fetching as of the initial build.
+HARDWARE.md. Both native targets compile. Driver v1 attached and read PCI configuration/BAR successfully; MMIO correctly skipped with memory decoding off. V2 also verified bounded memory-decoding enable/read/restore and actual register access.
+All four reference clones are complete, pinned and reviewed for the first milestone;
+see references/manifest.json and docs/REFERENCES.md. Tracked upstream content is unchanged.
 
-Primary uncertainty: no endpoint interrupt routing exposed; Linux requires more
+After Open, legacy interrupt routing is exposed and DriverKit reports level type;
+actual delivery remains untested. Primary uncertainty: Linux requires more
 than counter polling for trustworthy resident data. Safe 32-bit IOVA allocation,
 coherency, engine cancellation and complete raw data integrity are untested.
 No genuine ADC bytes, clock measurement, RF capture or decode result exist yet.
+
+Discovery/PCI attachment commit: `2d05277`. V2 register-probe result is a separate
+follow-up milestone. No DMA enabled. V1 replacement initially left the old instance
+attached; explicit deactivation detached it. macOS reported reboot-required for
+retirement, but v2 activation/attachment subsequently succeeded without reboot.
+No driver processes were killed and no security setting changed.

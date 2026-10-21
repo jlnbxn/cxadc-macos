@@ -1,0 +1,29 @@
+{
+  "acquired": "2026-10-21",
+  "repositories": [
+    {
+      "name": "cxadc-linux3",
+      "url": "https://github.com/happycube/cxadc-linux3",
+      "commit": "68b4ddbc072301f68d376637534a039ce675f6ce",
+      "checkout": "full clone"
+    },
+    {
+      "name": "cxadc-win",
+      "url": "https://github.com/JuniorIsAJitterbug/cxadc-win",
+      "commit": "bbfc930bc5caa6bed9441974caec6c9ec062b8af",
+      "checkout": "full clone"
+    },
+    {
+      "name": "vhs-decode",
+      "url": "https://github.com/oyvindln/vhs-decode",
+      "commit": "177b505e3a433c454794aeb53f469599ddc8a168",
+      "checkout": "depth 1"
+    },
+    {
+      "name": "cxadc-wiki",
+      "url": "https://github.com/happycube/cxadc-linux3.wiki.git",
+      "commit": "5462e62158de4764d7e11bffcc7c8169012fe2e6",
+      "checkout": "sparse root Markdown, depth 1, blob filtered"
+    }
+  ]
+}

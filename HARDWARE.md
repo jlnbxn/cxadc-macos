@@ -6,7 +6,7 @@ ignored `artifacts/discovery/`; this report excludes serial numbers and host UUI
 | Item | Observed value |
 | --- | --- |
 | macOS | 26.7.1, build 25G241 |
-| CPU architecture | arm64; M3 Max supplied by user |
+| CPU architecture | arm64; Apple M3 Max; Mac15,8 (sysctl verified) |
 | Xcode | 27.0, build 27A266a |
 | Installed SDKs | macOS 27.0, DriverKit 27.0 (also mobile SDKs) |
 | Enclosure | OWC Express 1M2; USB4; link reported 40 Gb/s; firmware 12.34 |
@@ -50,3 +50,32 @@ security settings. GetBARInfo verified BAR0 M32/16 MiB. PCI command is `0000`;
 interrupt config dword `37140100` (line 00, pin 01). GetInterruptType index 0
 returns success/type 1 (level), despite missing registry interrupt properties.
 This does not prove delivery; actual completion IRQs remain untested.
+
+V2 attachment temporarily changed PCI command `0000 → 0002 → 0000`; final readback
+verified restoration. No MMIO writes or DMA occurred. Interrupt dword then read
+`37140101` (line 01, pin 01). After Open, IORegistry now exposes
+`ApplePCIECLegacyIntController-apciec1` with specifier `<0100000000000000>`.
+Thus absent initial routing properties are not a proven interrupt limitation.
+
+| Register | Offset | Actual v2 attachment read |
+| --- | --- | --- |
+| MO_DEV_CNTRL2 | 200034 | 45534e4f |
+| MO_PCI_INTMSK | 200040 | 00000000 |
+| MO_PCI_INTSTAT | 200044 | 00030000 |
+| MO_VID_INTMSK | 200050 | 00000000 |
+| MO_VID_INTSTAT | 200054 | 00000000 |
+| MO_DEVICE_STATUS | 310100 | 00000214 |
+| MO_INPUT_FORMAT | 310104 | 00004080 |
+| MO_PLL_REG | 310168 | 00f15f18 |
+| MO_SCONV_REG | 310170 | 00021f07 |
+| MO_AGC_SYNC_TIP3 | 310210 | 1e48e040 |
+| MO_AGC_GAIN_ADJ4 | 310220 | 006a2c34 |
+| MO_VBI_GPCNT | 31c02c | 00000000 |
+| MO_VID_DMACNTRL | 31c040 | 00000000 |
+
+All offsets/values above are hexadecimal. These are power-on/attachment observations,
+not the intended raw configuration. `MO_DEV_CNTRL2` notably equals the subsystem
+ID dword; do not substitute this readback for a documented reset value or infer
+undocumented bits. Its known RISC-enable bit 5 is clear. The other raw setup values
+have not been written. `mmio_valid` means the bounded reads did not return the API's
+all-ones failure sentinel; it does not prove analog signal fidelity or chip settings.

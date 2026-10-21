@@ -1,9 +1,10 @@
 # CX23880 CXADC for macOS
 
 Native arm64 PCIDriverKit development for unsigned 8-bit raw RF capture from
-Conexant `14f1:8800`. **Stage A: enumeration and a read-only attachment probe.**
+Conexant `14f1:8800`. **Stage A: enumeration and a bounded register probe.**
 Capture, ADC initialization, DMA, streaming and VHS-Decode validation are not yet
-implemented. No sample file has been produced.
+implemented. The v2 probe has read real registers and restored PCI command 0000.
+No sample file has been produced.
 
 ```sh
 ./scripts/build.sh
@@ -11,6 +12,9 @@ implemented. No sample file has been produced.
 ./build/cxadc-capture --info
 ./scripts/build-driver.sh
 ./scripts/build-local-host.sh
+python3 scripts/check-probe.py     # check the actual attached v2 probe
+python3 tools/analyze_u8.py FILE.u8 --sample-rate 28636363
+python3 -m unittest discover -s tests -v
 ```
 
 Tested build environment: Apple Silicon, macOS 26.7.1, Xcode/DriverKit 27.0.
@@ -27,9 +31,11 @@ or register-write interface is exposed.
 
 The diagnostic extension matches only `14f1:8800`, subsystem `4e4f:4553`.
 It never matches the ITE bridge, `8804` function or HVR-1200. It reads PCI configuration
-and, only if memory decoding is already enabled and bus mastering off, a fixed list
-of CX23880 registers. It performs no PCI configuration or MMIO writes and enables
-neither interrupts nor DMA. An all-ones MMIO result aborts further register reads.
+and, only with bus mastering off, a fixed list of CX23880 registers. Version 2
+temporarily enables only PCI memory decoding, performs no MMIO writes,
+restores and checks the exact original PCI command, and enables neither interrupts
+nor DMA. If bus mastering is already on, it skips MMIO entirely. An all-ones MMIO
+result aborts further register reads.
 
 The local host accepts `activate` and `deactivate`; these request macOS system-extension
 operations and can require OS approval. They change no security settings. Activation
@@ -42,3 +48,8 @@ See [HARDWARE.md](HARDWARE.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 Project source is GPL-2.0-or-later. Upstream reference repositories retain their
 own licenses. Raw RF connection remains a later milestone: VCR tap DC isolation,
 input loading and safe levels must be resolved before connecting RF.
+
+The offline analyzer reports a 256-code histogram, clipping-code counts/percentages,
+mean, standard deviation, AC/DC RMS and code-span dB. It does not measure analog
+dynamic range, sample clock or capture correctness. Its explicit sample-rate argument
+is an assumption. No FFT is implemented. Tests use generated arithmetic fixtures only.

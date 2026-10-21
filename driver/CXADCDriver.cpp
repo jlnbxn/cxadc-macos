@@ -47,16 +47,32 @@ kern_return_t IMPL(CXADCDriver, Start) {
     probe.interruptStatus = IOInterruptDispatchSource::GetInterruptType(pci, 0, &probe.interruptType);
     os_log(OS_LOG_DEFAULT, "CXADC: primary=%08x subsystem=%08x command=%04x BAR0=%08x size=%llu irq-config=%08x irq-result=%08x",
            probe.primary, probe.subsystem, command, probe.bar0, probe.barSize, probe.interruptConfig, probe.interruptStatus);
-    // Stage A is strictly read-only: no memory-decode enable, reset, status
-    // acknowledgement, DMA mappings, interrupt enable or bus-master writes.
-    if (command != 0xffff && (command & 2) && !(command & 4) &&
+    // The only hardware write in this bounded probe is temporarily setting
+    // PCI command Memory Space Enable. Preserve every other command bit and
+    // restore the original word before publishing. Never enable bus mastering.
+    // No reset, MMIO writes, DMA mapping, interrupt enable or acknowledgement.
+    probe.commandAfter = command;
+    if (command != 0xffff && !(command & 4) &&
         !probe.barStatus && !(type & 1) && probe.barSize >= 0x31c044) {
-        probe.mmioRead = 1; probe.mmioValid = 1;
-        for (unsigned i = 0; i < cxadc::registerCount; ++i) {
-            pci->MemoryRead32(index, cxadc::registers[i].offset, &probe.values[i]);
-            os_log(OS_LOG_DEFAULT, "CXADC: BAR0[%06x]=%08x", cxadc::registers[i].offset, probe.values[i]);
-            if (probe.values[i] == 0xffffffff) { probe.mmioValid = 0; break; }
+        uint16_t enabled = command;
+        if (!(command & 2)) {
+            pci->ConfigurationWrite16(4, command | 2);
+            pci->ConfigurationRead16(4, &enabled);
         }
+        if (enabled == (command | 2)) {
+            probe.mmioRead = 1; probe.mmioValid = 1;
+            for (unsigned i = 0; i < cxadc::registerCount; ++i) {
+                pci->MemoryRead32(index, cxadc::registers[i].offset, &probe.values[i]);
+                os_log(OS_LOG_DEFAULT, "CXADC: BAR0[%06x]=%08x", cxadc::registers[i].offset, probe.values[i]);
+                if (probe.values[i] == 0xffffffff) { probe.mmioValid = 0; break; }
+            }
+        }
+        if (!(command & 2)) pci->ConfigurationWrite16(4, command);
+        uint16_t restored = 0xffff;
+        pci->ConfigurationRead16(4, &restored);
+        probe.commandAfter = restored;
+        os_log(OS_LOG_DEFAULT, "CXADC: PCI command restored=%04x expected=%04x", restored, command);
+        if (restored != command) { pci->Close(this, 0); return kIOReturnIOError; }
     }
     auto properties = OSDictionary::withCapacity(1);
     auto data = OSData::withBytes(&probe, sizeof(probe));

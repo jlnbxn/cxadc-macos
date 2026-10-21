@@ -23,7 +23,7 @@ inline constexpr Register registers[] = {
 inline constexpr unsigned registerCount = sizeof(registers) / sizeof(registers[0]);
 // Fixed-width, local arm64 registry snapshot, not a streaming ABI.
 struct Probe {
-    uint32_t version = 1;
+    uint32_t version = 2;
     uint32_t primary = 0, subsystem = 0, command = 0;
     uint32_t bar0 = 0, interruptConfig = 0;
     uint32_t barStatus = 0, barIndex = 0, barType = 0;
@@ -31,7 +31,7 @@ struct Probe {
     uint64_t barSize = 0, interruptType = 0;
     uint32_t mmioRead = 0, mmioValid = 0;
     uint32_t values[registerCount]{};
-    uint32_t reserved = 0;
+    uint32_t commandAfter = 0;
 };
 static_assert(sizeof(Probe) == 120);
 }

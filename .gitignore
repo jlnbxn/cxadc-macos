@@ -1,5 +1,4 @@
 .DS_Store
-.DS_Store
 /build/
 /artifacts/
 /references/*/
@@ -12,3 +11,4 @@
 *.provisionprofile
 *.p12
 *.pem
+__pycache__/

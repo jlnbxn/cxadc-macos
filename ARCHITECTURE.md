@@ -3,7 +3,8 @@
 The implemented vertical slice is IORegistry enumeration → exact endpoint matching
 → DriverKit PCI open → PCI configuration and bounded register reads → immutable
 registry snapshot → native JSON CLI. It has no DMA allocation, sample generation,
-ADC configuration or interrupt acknowledgement. All offsets are CX23880 definitions
+ADC configuration or interrupt acknowledgement. V2 enables PCI memory decoding
+only around the bounded read, then verifies restoration of the exact command word. All offsets are CX23880 definitions
 from the pinned Linux source; no CX23885 register assumptions are carried across.
 
 PCIDriverKit is the first choice: the installed SDK supplies Open/Close,
@@ -37,8 +38,9 @@ DMA gates before Stage C:
    become an implicit macOS constant. Require contiguous mapped RISC fetch storage
    or explicitly verified jumps across mapped segments. Emit little-endian words.
 3. Establish a trustworthy completion boundary. Linux warns GPCNT alone can lead
-   actual memory visibility; its IRQ1 boundary is important. Missing legacy interrupt
-   routing needs an evidence-based solution. Polling a counter, assuming a cache
+   actual memory visibility; its IRQ1 boundary is important. Actual legacy interrupt delivery needs validation. Initial routing properties were
+   absent; after DriverKit open the endpoint exposes ApplePCIECLegacyIntController
+   and GetInterruptType succeeds (level). This is not an interrupt-delivery test. Polling a counter, assuming a cache
    barrier flushes PCI writes, or borrowing the CX23885 ring is insufficient.
 4. Validate coherency and CPU access using supported mapping APIs. Retain mappings
    through engine stop, bus-master disable, posted-write completion and verified

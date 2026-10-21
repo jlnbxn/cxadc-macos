@@ -22,13 +22,14 @@ static uint32_t pciID(io_registry_entry_t entry, const char *key) {
 static NSDictionary *probeJSON(NSData *data) {
     if (data.length != sizeof(cxadc::Probe)) return @{@"error": @"unexpected probe size"};
     cxadc::Probe p; memcpy(&p, data.bytes, sizeof(p));
-    if (p.version != 1) return @{@"error": @"unsupported probe version"};
+    if (p.version != 1 && p.version != 2) return @{@"error": @"unsupported probe version"};
     NSMutableDictionary *regs = [NSMutableDictionary dictionary];
     if (p.mmioRead && p.mmioValid)
         for (unsigned i=0; i<cxadc::registerCount; ++i)
             regs[@(cxadc::registers[i].name)] = @{@"offset":hex(cxadc::registers[i].offset), @"value":hex(p.values[i])};
     return @{@"snapshot_time":@"driver attachment; not a live read",
              @"api_version":@(p.version), @"pci_command":hex(p.command),
+             @"pci_command_after_probe": p.version >= 2 ? hex(p.commandAfter) : [NSNull null],
              @"bus_master_enabled":@((p.command & 4) != 0), @"bar0_config":hex(p.bar0),
              @"bar_status":hex(p.barStatus), @"bar_index":@(p.barIndex),
              @"bar_type":hex(p.barType), @"bar_size_bytes":@(p.barSize),

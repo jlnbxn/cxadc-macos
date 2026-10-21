@@ -7,8 +7,8 @@ Do not edit them. Clone acquisition date: 2026-10-21.
 | --- | --- | --- |
 | https://github.com/happycube/cxadc-linux3 | `68b4ddbc072301f68d376637534a039ce675f6ce` | cxadc.c and cx88-reg.h |
 | https://github.com/JuniorIsAJitterbug/cxadc-win | `bbfc930bc5caa6bed9441974caec6c9ec062b8af` | driver/cx2388x.c, cxadc_win.c |
-| https://github.com/oyvindln/vhs-decode | clone still fetching | pending |
-| https://github.com/happycube/cxadc-linux3.wiki.git | clone still fetching | home page inspected over web |
+| https://github.com/oyvindln/vhs-decode | `177b505e3a433c454794aeb53f469599ddc8a168` | u8 loader and CLI format/rate options |
+| https://github.com/happycube/cxadc-linux3.wiki.git | `5462e62158de4764d7e11bffcc7c8169012fe2e6` | Home, card types, technical info and command docs |
 | Local hvr1200-macos | `a4e28509264881b4d9b67ba285a0dcbb400265a4` | DriverKit lifecycle, build, DMA and panic notes |
 
 The Linux source declares GPL-2.0-or-later, copyright Hew How Chee (2005–2007),
@@ -79,3 +79,27 @@ Primary Apple references:
 The CXADC wiki home describes nominal stock-clock capture at 28.6 MSPS. Its advice
 is background; verified Linux source defines the register sequence, and this card's
 clock/wiring still need measurement. No wiki prose or images are redistributed here.
+
+All four clones are now complete and pinned in `references/manifest.json`. Tracked
+files in each compare clean to HEAD; Finder-generated untracked .DS_Store files
+are not upstream edits and are not committed. VHS-Decode is a depth-one checkout.
+The wiki is a depth-one blob-filtered sparse checkout of root Markdown; image
+assets are intentionally absent. Oversized earlier full-history transfers were
+cancelled before checkout; Git removed their incomplete directories.
+
+VHS-Decode's `lddecode/utils.py` routes `.u8` to `load_unpacked_data_u8`, then
+NumPy `uint8`, with one byte per sample. Its CLI uses `--system PAL`,
+`--tape_format VHS` (or `SVHS`), and `--frequency` / `-f` for the explicit source
+rate. Default is 40 MHz, so leaving the rate implicit would misinterpret our
+planned 28.636363 MHz stream. These options were inspected, not executed on RF.
+
+The wiki documents white-board variations and suggests S-Video Y/VMUX2 for some
+white cards; that is a hypothesis for this board, not measured wiring. Its board
+modifications are outside the first milestone and are not applied. DC isolation,
+VCR loading and input-voltage limits still require a specific safe tap arrangement.
+
+To reconstruct references, clone each manifest URL, fetch its exact commit if
+needed, and check out that commit detached. For the large wiki use
+`git clone --depth 1 --filter=blob:none --no-checkout URL references/cxadc-wiki`,
+then `git -C references/cxadc-wiki sparse-checkout set --no-cone '/*.md' '/*.markdown'`
+and check out the pinned commit. Never patch source in the reference directories.
