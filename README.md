@@ -3,7 +3,9 @@
 Native arm64 PCIDriverKit raw ADC capture for Conexant `14f1:8800`. Driver v8 has
 captured real unsigned 8-bit samples with disconnected inputs (1 and 10 seconds)
 and PAL MiniDV composite on RCA (through 60 seconds). CVBS-Decode produced a
-recognizable PAL picture from real captures. VHS RF acceptance remains pending. This is development software, not archival validation.
+recognizable PAL picture from real captures. Genuine VHS playback RF has now
+also been captured and decoded into recognizable colour PAL video with VHS-Decode.
+This is development software, not archival validation.
 
 ```sh
 ./scripts/build.sh
@@ -69,9 +71,9 @@ See [HARDWARE.md](HARDWARE.md), [ARCHITECTURE.md](ARCHITECTURE.md),
 Project source is GPL-2.0-or-later. Builds, captures, decode outputs and dependency
 installations stay ignored. No remote or code publication is configured.
 
-Next: multi-minute reliability and remaining failure paths, then an appropriately
-isolated VHS RF input. No RF tap or VCR wiring
-changes have been made.
+Next: multi-minute/archival reliability, remaining failure paths and signal-level
+quality assessment. The user supplied the RF tap; no physical changes were made
+by this project.
 
 PAL CVBS on this unmodified card required disabling the documented global ADC AGC
 gate for reliable field lock. The default remains the pinned Linux configuration.
@@ -100,3 +102,18 @@ show recognizable colour video, with remaining visible artefacts. This is an
 external verification/export step; codecs are not part of the capture engine.
 Current TBC Tools calls the GUI `tbc-analyse` (formerly `ld-analyse`). GUI inspection
 was blocked by denied computer-use access and remains unverified.
+
+First VHS RF validation used the same capture engine and Linux-reference AGC:
+
+```sh
+./build/cxadc-capture --duration 10 --output rf_test.u8 --vmux 1 --level 0 --sixdb 0 --center-offset 8 --agc-enable 1
+vhs-decode --frequency 28.636363 --system PAL --tape_format VHS --threads 2 rf_test.u8 rf_test
+tbc-video-export --profile ffv1 --no-dropout-correct --threads 4 rf_test.tbc rf_test_export
+```
+
+The real ten-second RF sample decoded to 498 PAL fields and exported 249 colour
+frames. RF stream tests also reached 60 s. See [the RF test report](docs/RF-FIRST-CAPTURE.md)
+for exact hardware context, results and limitations. The test validates this
+short-duration end-to-end path; electrical loading and archival quality are not
+thereby certified. The first recognizable RF result was obtained without increasing gain or
+modifying C31.

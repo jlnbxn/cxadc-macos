@@ -53,6 +53,17 @@ Normal colour export now also verified with official native TBC Tools v3.3.0:
 249 frames, 928×576, 25 fps, 9.96 s, FFV1 MKV. Export previews at 1/5/9 s show
 recognizable real colour video with artefacts. GUI TBC inspection is blocked by
 denied computer-use access, explicitly unverified.
-Next: multi-minute capture and remaining failure paths, then safely isolated VHS RF
-and actual VHS-Decode acceptance. DriverKit remains viable; no signing or DMA
+The next RF milestone is recorded below. DriverKit remains viable; no signing or DMA
 mapping blocker is present for the tested development setup.
+
+First real VHS RF milestone, 2026-10-21: user supplied a coax RF tap with a 68 nF
+series capacitor; C31 intact. Idle reconnection verified. V8 captured 1 s then
+10 s using VMUX1/level0/sixdb0/offset8/AGC1 without driver changes. VHS-Decode
+PAL VHS at nominal28.636363MHz decoded 48 and 498 fields respectively. Exported
+colour video was visually verified, including frames near 1/5/9 s in the 10 s
+recording. The primary end-to-end path is demonstrated for a short real RF capture.
+Signal spans only codes97..120, so this is not optimal ADC range or quality proof.
+No physical or CX23885 changes, no security changes, no publication.
+A subsequent 60 s RF stability capture completed; final diagnostics are recorded
+in docs/RF-FIRST-CAPTURE.md. Remaining work is multi-minute/archival reliability,
+remaining failure paths, loading assessment and signal/gain quality evaluation.

@@ -10,7 +10,7 @@
 | ADC initialization | yes | yes | yes | readback verified |
 | DMA/RISC capture | yes | yes | yes | genuine ADC, IRQ, wrap and stop |
 | Streaming / file capture | yes | yes | yes | through 60 s CVBS |
-| RF input / VHS-Decode | no | — | — | no |
+| RF input / VHS-Decode | yes | decoder installed | yes | actual RF decoded to colour PAL; see RF report |
 
 Before activation, CLI `--info` returned the real endpoint at `4:0:0`, no attached driver,
 16 KiB mapper pages and `capture_available:false`. DriverKit build completed with
@@ -21,10 +21,12 @@ successful build. SDK paths include `System/DriverKit`; a first inspection at th
 macOS-style framework path failed and was corrected.
 
 Remaining acceptance work: multi-minute/30–60-minute captures, untested failure
-paths, isolated RF input, then actual PAL VHS/S-VHS decoding. Earlier Stage A
+paths and broader RF quality/format validation. First PAL VHS RF decoding is now
+verified; see docs/RF-FIRST-CAPTURE.md. Earlier Stage A
 observations below are historical; Stage B results follow.
 No synthetic sample data may count as hardware evidence. Signal statistics cannot
-prove correct analog capture. Real RF must await resolved isolation and loading.
+prove correct analog capture. Electrical isolation/loading require their own evaluation; successful decoding
+does not certify them.
 
 Stage A v1 attached on the actual CX23880. PCI command `0000`, BAR0 `02000000`,
 BAR size 16777216/type M32, interrupt config `37140100`; GetInterruptType(index 0)
@@ -113,8 +115,8 @@ full DMA blocks from the exact byte prefix written for the requested nominal
 sample duration. Timing includes startup/teardown and does not calibrate the clock.
 
 Hashes plus RISC counter observations detect several failure modes; they do not
-prove analog sample order or zero loss. Dropped-sample count remains null. No RF
-input or VHS-Decode acceptance test has been attempted. CVBS-Decode results follow below.
+prove analog sample order or zero loss. Dropped-sample count remains null. At this milestone RF had not been attempted;
+CVBS-Decode and subsequent RF results follow below.
 
 
 Hardware cancellation tests on v7 (real PAL CVBS data, 64 MiB ring):
@@ -173,7 +175,8 @@ agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
 the permitted outside-sandbox run succeeded. No security settings were changed.
 Idle defaults restored to AGC1/VMUX1/level0/sixdb0/offset8, PCI command0000,
 videoDMA0, running0, stop_verified1, quarantine0. Forced sleep, disconnection,
-disk-full, archival durations and VHS RF decoding remain untested.
+disk-full and archival durations remain untested. At this milestone VHS RF was
+still pending; the subsequent successful RF test is recorded below.
 
 Milestone commits: `1b78b14` (ADC/readback and 32-bit mappings), `4ea0fd5`
 (genuine raw streaming, IRQs and teardown). Subsequent v8 CVBS validation is
@@ -219,3 +222,14 @@ C++ tool directories). Homebrew qwt/fftw were installed for that attempt; the
 current TBC-tools source additionally requires ONNX Runtime/submodules. Instead
 of extending those dependencies, the published native release was used. No claim
 is made that the current TBC-tools source was locally compiled or CI-validated.
+
+## First real VHS RF acceptance
+
+See [docs/RF-FIRST-CAPTURE.md](docs/RF-FIRST-CAPTURE.md) for reproducible commands
+and actual results. Driver v8 required no code changes: the general raw ADC engine
+captured a real playing VHS RF source via RCA. The one-second sample decoded into
+48 PAL fields, and the ten-second sample into 498 fields. Normal offline export
+produced recognizable colour video, inspected at multiple points in the ten-second
+recording. This establishes initial short-duration end-to-end RF success.
+Multi-minute/archival reliability, exact clock, calibrated signal quality, loading,
+forced sleep and active disconnection remain unverified. No zero-loss claim.

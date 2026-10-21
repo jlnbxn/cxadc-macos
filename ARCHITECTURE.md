@@ -64,3 +64,9 @@ or reset semantics are reused.
 PCIDriverKit remains viable: mappings, raw DMA and interrupts now run on hardware.
 There is no demonstrated reason to use a legacy kext. No additional security
 settings have changed; no code has been pushed or published.
+
+Real RF validation now confirms that this same general ADC engine supports
+VHS-Decode: VMUX1/level0/sixdb0/offset8/AGC1, 1/10/60-second actual RF captures.
+Only the offline decoder changes between the CVBS and RF tests; no driver code or
+stream transformation was added. The 10 s RF decode exported recognizable colour
+PAL video. Details and limits: docs/RF-FIRST-CAPTURE.md.
