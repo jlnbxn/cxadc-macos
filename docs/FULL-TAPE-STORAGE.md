@@ -72,3 +72,13 @@ reviewable; it does not start the engine. Capture still requires the tape to
 be cued/playing and must be monitored for rate, errors and disk space.
 This will be the first capture beyond one minute, not an already-proven
 44-minute archival workflow.
+
+## Subsequent real-capture preflight
+
+The user then cued playback and authorized a test. A real 60-second recording
+to T7 completed at level31 with the planned settings: 1,718,181,780 bytes,
+codes 36..181, no rail samples, no reported DMA/overrun/write errors and verified
+shutdown. The first five seconds decoded into 250 PAL S-VHS fields. Detailed
+results and limitations are in TESTING.md. This supersedes the earlier
+"not yet verified" T7/one-minute gain status above, but does not establish
+full-tape reliability or clipping headroom for every tape section.

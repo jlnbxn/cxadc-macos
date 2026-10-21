@@ -134,3 +134,11 @@ deletion by agent. Unstarted 45-minute plan saved separately (77.32 GB raw,
 VMUX1/level 31/sixdb0/offset8/AGC1). Driver idle and default remains level 0.
 No full-tape capture started. Current acquisition is video RF only.
 Report: docs/FULL-TAPE-STORAGE.md.
+
+T7 real RF preflight passed: 60 seconds at level31/sixdb0, 1,718,181,780 bytes,
+codes 36..181 with no rail samples, 6,554 unique blocks, no reported DMA/overrun
+or disk errors. Verified shutdown/command restoration, restored idle level0.
+Five-second PAL S-VHS excerpt decoded to 250 fields without duplicate flags,
+parity errors or logged ERROR/WARNING. Raw and analysis retained on T7.
+Level31 now verified for this minute; remaining tape headroom and 45-minute
+stability remain unverified. Full-tape capture has not started.

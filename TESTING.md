@@ -316,3 +316,32 @@ free, then showed ~323 GB on repeat checks; the agent deleted no user files.
 User selected staged decoding, with only generated TBCs discarded after
 verification; chunk-boundary validation remains unimplemented/unverified.
 See docs/FULL-TAPE-STORAGE.md. No full-tape capture has started.
+
+## Real T7 RF preflight, level 31
+
+2026-10-21: user confirmed playback ready. Captured 60 seconds of genuine RF to
+`/Volumes/T7/CXADC/2026-10-21-tape-01/raw/preflight-level31-60s.u8`, using v8,
+VMUX1/level31/sixdb0/offset8/AGC1 and a 64 MiB ring. Exactly 1,718,181,780 bytes;
+complete sidecar, writer errno 0, 6,556 interrupt callbacks, 25 ring wraps,
+zero reported overruns/DMA errors. Stop verified, command restored to 0000,
+DMA off and no quarantine; conservative idle level 0 restored afterwards.
+
+Entire-file NumPy histogram and SHA-256/block-hash analysis: codes 36..181,
+mean 120.7384, standard deviation 25.4008 codes, no samples at 0 or 255.
+All 6,554 full 256 KiB chunks unique, no adjacent identical chunks. SHA-256:
+`afe0dee963b92a0679130d5db9aeead92f239b4d21d35ecbade157ca42b24518`.
+Analysis JSON retained locally in artifacts and in the T7 session logs.
+Counters/hashes do not establish zero sample loss or calibrated clock accuracy.
+
+Pinned VHS-Decode, PAL/SVHS, 28.636363 MHz, `--use_saved_levels --length 125`:
+first five seconds decoded to 250 fields, matching luma/chroma byte counts,
+alternating parity, no duplicate flags or logged ERROR/WARNING. Rounded source
+gaps 0.9..1.1 fields, 38 detected dropout segments across 21 fields. These are
+decoder diagnostics, not DMA loss measurements. No full-minute decode or
+44-minute capture verified by this test.
+
+Standard dropout-corrected FFV1 preview exported successfully: 125 frames,
+5.000 seconds, 928×576 at 25 fps, 77,302,510 bytes; 32 reported concealments.
+Inspected the frame at two seconds: recognizable colour garden/football scene.
+This checks one exported frame, not every frame or comparative image quality.
+Preview retained as artifacts/t7-preflight-level31-preview-export.mkv.
