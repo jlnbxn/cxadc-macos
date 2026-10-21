@@ -173,7 +173,7 @@ attachment snapshot check pass. A further real 2 s capture verified the CLI's
 idle-sleep assertion appears during capture and is released after exit 0. The first
 agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
 the permitted outside-sandbox run succeeded. No security settings were changed.
-Idle defaults restored to AGC 1/VMUX1/level 0/sixdb 0/offset8, PCI command0000,
+Idle defaults restored to AGC 1/VMUX1/level 0/sixdb 0/offset 8, PCI command0000,
 video DMA=0, running=0, stop_verified=1, quarantine=0. Forced sleep, disconnection,
 disk-full and archival durations remain untested. At this milestone VHS RF was
 still pending; the subsequent successful RF test is recorded below.
@@ -267,3 +267,22 @@ dropout segments 318→295, while bPSNR 39.7→38.6; ADC span 97..120 unchanged.
 These mixed diagnostics do not establish improved SNR, stronger ADC input or
 elimination of rare tears. No native code changes or new driver build required.
 Existing capture/decode diagnostics and git diff checks passed on the new files.
+
+## RF gain and live SCART test
+
+See [docs/RF-GAIN-SWEEP.md](docs/RF-GAIN-SWEEP.md). Actual five-second captures
+at levels 0/4/8/16/24/31, sixdb 0, all 143,181,815 bytes and complete metadata.
+All had 546 unique full blocks, 548 interrupt callbacks, 2 wraps, no reported
+DMA faults/overruns, verified stop and exact PCI command restoration. No samples
+at 0/255. ADC spans respectively 20/26/32/53/90/146 codes. Level 31 min/max 36/182.
+The user reported no visible SCART change during both groups of gain tests.
+
+Levels 0/16/31 decoded fully with the unchanged PAL S-VHS level-reuse profile:
+248 fields each, no log WARNING/ERROR,duplicate flags or nonzero fault bitmaps;
+TBC byte counts agree. Normal colour FFV1 exports completed and frames were
+visually inspected. Decoder bPSNR 38.6/40.0/40.6 is not calibrated SNR; the clips
+contain different scenes, so no controlled noise/quality improvement claim.
+No full decode of intermediate levels 4/8/24. Level 31 is a longer-trial candidate,
+not globally qualified or proven to eliminate rare tears. Restored idle level 0,
+DMA/mastering off, stop_verified=1, no quarantine. No driver changes/build needed.
+Existing capture/decode checks and git diff checks pass. No MP4. 76 GiB free.

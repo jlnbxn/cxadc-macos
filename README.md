@@ -137,3 +137,10 @@ successfully. Its [matched-scene comparison](docs/C31-COMPARISON.md) shows mixed
 diagnostics and unchanged ADC span; a major quality gain or cure for rare tears
 is not established. The general raw capture engine and decoder settings remained
 unchanged. No MP4 was requested or generated.
+
+The subsequent real RF gain sweep tested levels 0/4/8/16/24/31 with sixdb 0.
+Level 31 reached codes 36–182 without clipping in a five-second sample and decoded
+successfully. This is a candidate for the next longer trial, not a new universal
+default. The CLI still defaults to conservative level 0. The user reported no
+visible SCART disturbance during the sweep. See [gain test results](docs/RF-GAIN-SWEEP.md)
+for the measurements and limits of the comparison.

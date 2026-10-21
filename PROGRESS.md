@@ -58,7 +58,7 @@ mapping blocker is present for the tested development setup.
 
 First real VHS RF milestone, 2026-10-21: user supplied a coax RF tap with a 68 nF
 series capacitor; C31 intact. Idle reconnection verified. V8 captured 1 s then
-10 s using VMUX1/level 0/sixdb 0/offset8/AGC 1 without driver changes. VHS-Decode
+10 s using VMUX1/level 0/sixdb 0/offset 8/AGC 1 without driver changes. VHS-Decode
 PAL VHS at nominal 28.636363MHz decoded 48 and 498 fields respectively. Exported
 colour video was visually verified, including frames near 1/5/9 s in the 10 s
 recording. The primary end-to-end path is demonstrated for a short real RF capture.
@@ -99,3 +99,15 @@ Matched scenes align by 4.44 s, covering 55.44 s common content. Dropout segment
 318→295, bPSNR diagnostic 39.7→38.6, ADC span 97..120 unchanged: mixed evidence,
 not a demonstrated major quality gain or identified cause of rare tears.
 Report: docs/C31-COMPARISON.md. No MP4, no driver/CX23885 edits, 79 GiB free.
+
+RF gain milestone: six genuine five-second captures at levels 0/4/8/16/24/31
+passed DMA, byte/hash and teardown checks with boost off. ADC span 20→146 codes,
+level 31 range 36..182, no clipping in the sample. The user monitored SCART and
+reported no visible capture/gain-related disturbance for all tested steps.
+Levels 0/16/31 each decoded 248 PAL S-VHS fields without synchronization errors
+and exported recognizable colour video. Successive scenes differ, so noise and
+quality improvements are not yet scene-matched or established. Level 31/sixdb 0
+is the next longer-trial candidate; code defaults and idle state remain level 0.
+See docs/RF-GAIN-SWEEP.md. No driver/CX23885 edits, physical changes or MP4.
+Remaining: matched longer comparison, representative-tape clipping checks,
+archival-duration reliability and separate RF-loading/buffer assessment.

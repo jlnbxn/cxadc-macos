@@ -126,3 +126,11 @@ verified idle teardown. User-reported removal is now associated with genuine
 captured data; the physical component itself was not inspected by the agent.
 ADC span stayed 97..120. Matched decoded-scene diagnostics are mixed; no clear
 amplitude or overall quality improvement is established. See docs/C31-COMPARISON.md.
+
+Live SCART-monitored gain sweep: user observed no visible SCART picture change
+during capture start/stop or levels 0/4/8/16, then separately confirmed no visible
+change at 24/31. Six five-second captures ran with C31 removed and sixdb 0. Code
+span increased from 99..119 at level 0 to 36..182 at level 31 with no rail samples.
+No instrumented loading measurement or tap-connected/disconnected comparison
+was performed. The amplifier/buffer question remains separate from code range.
+Hardware settings were restored to level 0/sixdb 0/offset 8/AGC 1 after testing.
