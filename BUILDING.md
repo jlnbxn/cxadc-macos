@@ -61,11 +61,12 @@ and [macOS distribution-signing guidance](https://developer.apple.com/documentat
 The identifiers `com.example.CXADC.Driver` and `com.example.CXADC` are existing
 development placeholders. The verified setup keeps them unchanged. A distributor
 must select identifiers it controls and update the Xcode project, both Info.plists,
-the CLI entitlement, the host request identifier and CLI driver matching together.
+the CLI entitlement, host request identifier and development-host packaging path
+together. Keep the driver class matching consistent with its Info.plist.
 Check for all occurrences before doing so:
 
 ```sh
-rg 'com\.example\.CXADC' driver installer src CXADC.xcodeproj
+rg 'com\.example\.CXADC' driver installer src scripts CXADC.xcodeproj
 ```
 
 The scripts intentionally produce development/ad hoc builds; they are not a

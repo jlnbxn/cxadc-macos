@@ -50,3 +50,11 @@ See [the publication audit](docs/PUBLICATION-AUDIT.md). Source history and the
 verified driver implementation are preserved. Current documentation is sanitized;
 historical private author email/home paths still need an explicit publication
 decision. No history rewriting or publication is part of this branch.
+
+Preparation commits `13d499f` and `8ee9540` introduce sanitized public docs,
+upstream notices, expanded ignore rules, portable external-tool paths and audit/
+test commands. A clean source-only clone builds all native outputs and passes
+ASan/UBSan plus 11 Python tests; strict signatures verify. Driver implementation
+is unchanged apart from provenance comments and user-facing usage prose in the
+Info.plist. Current source/link checks pass; historical privacy findings remain.
+The card is not presently enumerated, so no fresh hardware capture is claimed.

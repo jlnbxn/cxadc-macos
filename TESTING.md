@@ -29,6 +29,13 @@ opt-in, separate from this suite:
 - `scripts/test-hardware-stop.py --hardware MODE` captures real samples and signals
   only its own child CLI. It is not a routine release-cleanup check.
 
+Publication cleanup on 2026-10-22: clean source-only clone builds CLI, DriverKit
+extension and ad hoc host; all strict signature checks pass. ASan/UBSan suite and
+11 Python tests pass without hardware. CLI help is unchanged. Current source and
+local Markdown-link audits pass; historical private paths remain flagged. The
+card is not currently enumerated, so no new hardware capture was run. All native
+implementation files retain baseline code, apart from attribution comments.
+
 ## Actual hardware progression
 
 All durations below use nominal 28.636363 MSPS unsigned 8-bit samples. Successful

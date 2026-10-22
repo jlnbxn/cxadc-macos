@@ -33,10 +33,10 @@ No other white-board variant or CX25800 has been tested.
 
 ### Early attachment register evidence
 
-The initial endpoint exposed power-management capability at0x4c and VPD at0x44.
+The initial endpoint exposed power-management capability at 0x4c and VPD at 0x44.
 Before raw initialization, the v2 bounded register snapshot read the following
 hexadecimal byte offsets/values, temporarily enabling memory decoding and
-restoring PCI command0000 afterwards:
+restoring PCI command 0000 afterwards:
 
 | Register | Offset | Attachment readback |
 | --- | --- | --- |
@@ -56,8 +56,8 @@ restoring PCI command0000 afterwards:
 
 These are observations, not recommended initialization values. DEV_CNTRL2 is
 write-only: its coincidental subsystem-like readback is undefined and cannot
-prove engine state. Interrupt config changed from37140100 before Open to
-37140101 afterwards; GetInterruptType returned index0/type1. Initial absence
+prove engine state. Interrupt config changed from 37140100 before Open to
+37140101 afterwards; GetInterruptType returned index 0/type 1. Initial absence
 of routing properties was superseded by actual legacy interrupt delivery.
 
 ## Enclosure, adapter and power

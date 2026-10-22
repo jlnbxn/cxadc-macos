@@ -15,7 +15,7 @@ layout and RISC instruction scheme inform or are adapted into `core/Raw.hpp`,
 `driver/CXADCDriver.cpp` / `driver/Stream.hpp`. Linux-specific PCI/DMA/character
 device APIs are replaced with DriverKit code. The port changes buffer accounting,
 IRQ cadence, address validation, ownership and shutdown for this environment.
-MacOS adaptation performed 2026-10-21; attribution clarified2026-10-22.
+macOS adaptation performed 2026-10-21; attribution clarified 2026-10-22.
 
 Retained notices from `cxadc.c`:
 

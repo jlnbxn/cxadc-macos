@@ -133,9 +133,28 @@ Release checks so far:
 | CLI help/list | Interfaces intact; endpoint not presently enumerated |
 | Current hardware status | Driver not attached; no new capture/ADC/DMA test attempted |
 | Native configuration/logic comparison | Hardware source changes limited to comments; usage-description metadata only |
-| Current source secret/path/binary audit | Passed at review; final staged scan pending |
-| Markdown local links | Checked automatically; final check pending |
-| Clean source-only build | Pending |
+| Current source secret/path/binary audit | Passed, including staged/current source; heuristic and manual review |
+| Markdown local links | Passed; main external project links also resolved |
+| Clean source-only build | Passed: arm64 CLI, DriverKit extension, host and all CPU tests |
+
+The clean local clone at preparation commit `8ee9540` included no capture data,
+reference checkout or existing build output. All three native outputs built from
+that source and passed strict signature verification where signed. CLI help was
+byte-identical to the working-tree CLI's help. All 14 native implementation
+files compare identically to `185490d` after removing line comments; build
+configuration/entitlements are unchanged. LICENSE is byte-identical to baseline.
+Only documentation/verification reporting changed after this clean-build check.
+
+Preparation commits:
+
+- `13d499f`: public documentation, privacy cleanup, ignore rules and provenance.
+- `8ee9540`: portable offline-tool lookup, CPU test runner and redacting audit.
+- The commit containing this final report records clean-checkout verification.
+
+Current-source checks are clean. The all-history scan continues to identify the
+deliberately preserved historical paths and identity metadata described above.
+No remote/tag was added, no force operation occurred and the original feature
+branch still points to the verified starting commit.
 
 The cleanup does not modify/reinstall the active driver or change OS security.
 Prior 45-minute evidence remains documented, but no new hardware regression is
@@ -145,7 +164,7 @@ script and audit command are ready to integrate into CI later.
 
 ## Assessment
 
-Source snapshot preparation is substantially complete. Publication of the
+Source snapshot preparation and clean-build verification are complete. Publication of the
 preserved history remains **on hold for the owner's privacy decision** and the
 stated provenance review. Normal-security installation and public binary
 packaging are not verified. No publishing permission has been requested or used.
