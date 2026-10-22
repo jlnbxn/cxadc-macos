@@ -19,7 +19,11 @@ The existing feature branch and full history retain the working baseline.
 Local raw RF/video/preview data, generated builds and upstream checkouts were
 not deleted, moved or staged. This is not a destructive disk cleanup.
 
-## Privacy findings: preserved history needs a decision
+## Privacy findings: preserved history accepted
+
+The owner subsequently accepted retaining the authentic history, including local
+paths, after reviewing these findings. No history rewrite is requested. This
+acceptance does not authorize publication, a push, or a visibility change.
 
 **The latest source snapshot is sanitized; the preserved history is not private.**
 Removing local paths from current files does not remove older copies from Git.
@@ -51,7 +55,10 @@ nonzero for preserved historical path findings. It separately lists commits whos
 identity metadata needs review, without printing names/emails or matched values.
 These heuristic checks do not certify absence of every possible secret.
 
-### Publication options requiring owner choice
+### Recorded publication options
+
+The owner selected retaining history (option 1). Actual publication still needs
+separate authorization.
 
 1. Keep/publish history as-is, explicitly accepting the recorded identity and
    local-path exposure. Changing a GitHub email setting does not alter old commits.
@@ -164,7 +171,7 @@ script and audit command are ready to integrate into CI later.
 
 ## Assessment
 
-Source snapshot preparation and clean-build verification are complete. Publication of the
-preserved history remains **on hold for the owner's privacy decision** and the
-stated provenance review. Normal-security installation and public binary
+Source snapshot preparation and clean-build verification are complete. The owner
+accepted the preserved history's identity/path exposure. Publication still needs
+explicit authorization and the stated provenance review. Normal-security installation and public binary
 packaging are not verified. No publishing permission has been requested or used.

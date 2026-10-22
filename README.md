@@ -169,8 +169,8 @@ Foundational and related projects:
 - [CXADC Linux](https://github.com/happycube/cxadc-linux3)
 - [CXADC Windows](https://github.com/JuniorIsAJitterbug/cxadc-win)
 - [VHS-Decode](https://github.com/oyvindln/vhs-decode)
-- [MISRC-GUI](https://github.com/harrypm/MISRC-GUI) — related community capture UI;
-  integration with this driver has not been tested.
+- [MISRC-GUI](https://github.com/harrypm/MISRC-GUI) — experimental local native
+  integration has captured real RF; see [build and usage](docs/MISRC-GUI.md).
 - [TBC Tools](https://github.com/harrypm/tbc-tools) — external export/analysis tools.
 
 Development was substantially assisted by OpenAI Codex under human technical

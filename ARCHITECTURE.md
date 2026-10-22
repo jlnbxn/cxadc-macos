@@ -1,5 +1,9 @@
 # Capture architecture — implemented through driver v8
 
+The optional [MISRC-GUI integration](docs/MISRC-GUI.md) uses a versioned C
+user-space client around the same RPCs. It does not change the following PCI,
+DMA, interrupt or ownership implementation.
+
 The verified Stage A endpoint/BAR lifecycle remains in place. Attachment makes a
 bounded register snapshot, then leaves PCI command restored. An entitled native
 user client adds serialized static ADC configuration, mapping tests, status and

@@ -162,6 +162,29 @@ do not establish every frame's visual quality. There is no captured audio.
 
 ## Unverified cases
 
+### MISRC-GUI native backend (2026-10-22)
+
+Separate GUI integration commits `59909e4`, `916efd3`, upstream `9c3894cd`.
+See [integration results and commands](docs/MISRC-GUI.md). Native arm64 GUI,
+client library, CLI and DriverKit target build; driver RISC ASan/UBSan, client
+ABI argument checks and 11 Python tests pass. GUI smoke, static guards,
+unsigned-code mapping, real Darwin ring lifecycle and byte-exact direct RAW
+writer tests pass. Existing full GUI suite: 34/37 pass; the three failures also
+reproduce on the unchanged upstream revision. The additional unsigned test
+passes separately. No unrelated upstream audio/preview fixes attempted.
+
+Actual GUI RF recordings of 10 and 60 seconds completed and decoded successfully
+with pinned VHS-Decode `177b505`, PAL SVHS at nominal 28.636363 MSPS. Both stop
+reports show safe teardown/restored command and zero reported DMA overruns.
+Five-second GUI/CLI contention test: CLI failed busy (`0xe00002d5`), zero bytes;
+GUI wrote 143,392,768 bytes and stopped cleanly. Automated flags exercised an
+actual window/display pipeline; visual and interactive GUI acceptance is pending.
+No personal captures or logs are tracked. The original CX23885 project remains
+unchanged. The GUI/client were ad-hoc signed locally with the existing entitlement;
+the installed extension and system-security settings were not changed.
+
+### Remaining driver and capture cases
+
 - Calibrated sampling clock, analog gain/SNR, impedance and VCR loading.
 - Authoritative dropped-sample detection; reported count remains null.
 - Repeated long captures, other decks/cards/enclosures and other Macs/OS versions.

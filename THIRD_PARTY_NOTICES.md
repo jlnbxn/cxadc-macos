@@ -98,6 +98,12 @@ Python diagnostics use the standard library, except optional NumPy CVBS analysis
 
 ## License decision and remaining review
 
+The optional client in `client/` uses this project's existing RPC definitions and
+is GPL-2.0-or-later. MISRC-GUI remains a separate GPL-3.0-or-later repository; no
+GUI implementation is embedded here. Its macOS backend mirrors the public client
+header with its attribution/license intact. Combining these versions uses the
+GPL's later-version permission; no project-wide license replacement is made.
+
 Retaining **GPL-2.0-or-later** is appropriate for the identified Linux-derived
 work and existing project declarations; relicensing this adaptation as MIT/BSD
 would not remove upstream obligations. No incompatible embedded dependency was
