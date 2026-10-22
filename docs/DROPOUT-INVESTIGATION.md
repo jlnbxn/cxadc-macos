@@ -1,5 +1,9 @@
 # Diagnosis of the screenshot's horizontal streak
 
+Historical test report for the stated milestone. Later verification and current
+limitations are summarized in [TESTING.md](../TESTING.md). Media and diagnostic
+artifacts mentioned here are private, ignored local evidence, not repository files.
+
 2026-10-21. The user supplied a screenshot from the first minute-long decoded
 S-VHS recording and reported occasional similar artifacts absent from normal
 SCART capture. This investigation used existing saved data only: no hardware

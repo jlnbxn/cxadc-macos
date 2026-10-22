@@ -1,5 +1,9 @@
 # One-minute PAL S-VHS RF and time-base-correction test
 
+Historical test report for the stated milestone. Later verification and current
+limitations are summarized in [TESTING.md](../TESTING.md). Media and diagnostic
+artifacts mentioned here are private, ignored local evidence, not repository files.
+
 2026-10-21, driver v8 / API5. Same general raw ADC engine and conservative settings
 as the first RF test: VMUX1, level 0, sixdb 0, offset 8, AGC 1, 64 MiB ring, nominal
 28.636363 MSPS. The user confirmed this new section as PAL S-VHS/S-VHS ET.
@@ -104,8 +108,7 @@ those tear timestamps with decoder diagnostics, so weak signal is not establishe
 as their cause.
 
 The final MKV and contact image are under ignored artifacts/. The user cancelled
-MP4 creation; no MP4 was generated and no export process remains running. The
-SSD has 85 GiB available after retaining raw, comparison decodes and final outputs.
+MP4 creation; no MP4 was generated and no export process remains running. Private data remain outside Git.
 The existing CX23885 repository remains clean and unchanged.
 
 ## Next controlled comparison

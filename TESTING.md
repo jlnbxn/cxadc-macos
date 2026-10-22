@@ -1,430 +1,166 @@
-# Validation status
+# Validation and known limitations
 
-2026-10-21:
+## Evidence levels
 
-| Component | Implemented | Compiles | Runs | Real hardware verified |
-| --- | --- | --- | --- | --- |
-| Native arm64 PCI CLI | yes | yes, warnings as errors | yes | identifies 14f1:8800 |
-| Exact-match DriverKit probe | yes | yes | yes | PCI config/BAR and v2 MMIO |
-| Ad hoc development host | yes | yes | yes | activated/enabled |
-| ADC initialization | yes | yes | yes | readback verified |
-| DMA/RISC capture | yes | yes | yes | genuine ADC, IRQ, wrap and stop |
-| Streaming / file capture | yes | yes | yes | through 60 s CVBS |
-| RF input / VHS-Decode | yes | decoder installed | yes | actual RF decoded to colour PAL; see RF report |
+Implemented, compiled, executed, hardware verified and decoded into recognizable
+video are distinct claims. Driver v8/API5 reached each level on the one setup in
+[HARDWARE.md](HARDWARE.md). Synthetic arithmetic/RISC fixtures are CPU tests only;
+no generated samples are counted as hardware evidence. Private captures and logs
+are intentionally excluded from Git.
 
-Before activation, CLI `--info` returned the real endpoint at `4:0:0`, no attached driver,
-16 KiB mapper pages and `capture_available:false`. DriverKit build completed with
-`BUILD SUCCEEDED`; host and dext ad hoc signatures verified with codesign.
-Build logs and actual diagnostic output remain under ignored `artifacts/`.
-An initial CLI compile error (void pointer conversion) was corrected before the
-successful build. SDK paths include `System/DriverKit`; a first inspection at the
-macOS-style framework path failed and was corrected.
-
-Remaining acceptance work: multi-minute/30–60-minute captures, untested failure
-paths and broader RF quality/format validation. First PAL VHS RF decoding is now
-verified; see docs/RF-FIRST-CAPTURE.md. Earlier Stage A
-observations below are historical; Stage B results follow.
-No synthetic sample data may count as hardware evidence. Signal statistics cannot
-prove correct analog capture. Electrical isolation/loading require their own evaluation; successful decoding
-does not certify them.
-
-Stage A v1 attached on the actual CX23880. PCI command `0000`, BAR0 `02000000`,
-BAR size 16777216/type M32, interrupt config `37140100`; GetInterruptType(index 0)
-succeeded with type 1 (level). MMIO was deliberately skipped because memory decode
-was off. CLI JSON exposed the immutable snapshot. No DMA or config/MMIO writes.
-Unsupported capture arguments returned usage and created no file.
-
-V2: actual 13-register snapshot succeeded with PCI command `0000 → 0002 → 0000`,
-video DMA control and both interrupt masks zero, RISC readback undefined (write-only). No
-status acknowledgements, ADC initialization or DMA. After Open, legacy interrupt
-controller/specifier properties appeared; delivery remains untested.
-`python3 scripts/check-probe.py` checks the actual snapshot, including command
-restoration and disabled engines/masks. `--info` continues to label it as attachment
-time, not current state.
-
-Offline analyzer tests: uniform 0..255 histogram with analytic mean/variance,
-constant input with zero AC RMS, and empty-input rejection: all 3 passed. These
-fixtures are synthetic arithmetic tests, not RF data or DMA evidence.
-
-## Stage B — static ADC and mapping bring-up
-
-2026-10-21, driver bundles v3/v4 (control API 3):
-
-- Actual user-client status RPC works outside the agent sandbox. Sandbox access
-  failed with `0xe00002e2`; the same signed CLI outside it succeeded. No new
-  signing profile or security-setting change was needed.
-- `--dma-check`: 64 MiB sample mapping, one segment at device IOVA `80000000`;
-  contiguous RISC mapping at `84004000`; 32-bit bounds, lengths and alignment
-  checked. Prepared driver-owned staging memory round-tripped a 16 KiB pattern
-  using IODMACommand PerformOperation. CompleteDMA succeeded. Bus mastering stayed
-  off and PCI command was restored to `0000`. This is not hardware DMA evidence.
-- IOInterruptDispatchSource::Create on the actual legacy endpoint returned success,
-  type level. Contrary to the SDK's MSI-only limitation statement, source creation
-  works here; enable/actual interrupt delivery still requires testing.
-- First raw ADC readback stopped at OUTPUT_FORMAT: Linux writes `0f`, chip reads
-  `0e`. Manufacturer datasheet 101069A p6-72 marks bit 0 read-only/reserved zero.
-  V4 preserves Linux's write but excludes that bit from equality validation.
-- All 18 static raw ADC writes then passed readback: VMUX1, level 0, boost off,
-  center offset 8, PLL 11000000, SCONV 20000, RAW8. No DMA started. The nominal
-  rate is configured, not measured; no connector mapping is yet established.
-- Manufacturer datasheet p6-47 defines DEV_CNTRL2 as **write-only**. Earlier Stage A
-  interpretations of its readback as RISC-enable state were invalid. They must
-  not be used for stop verification. P6-86 defines VID_XFER_STATUS bit 0 as video
-  transfer-in-progress. Capture teardown will use that, writable engine control,
-  stopped counter and PCI command; no CX23885 TC_REQ assumptions.
-- Offline RISC tests (ASan/UBSan) pass: two-word 32-bit WRITE encoding, SG boundary,
-  page counter increment/reset, interrupt period, backward wrap, invalid high/unaligned
-  addresses and ADC option bounds. This does not validate the hardware engine.
-
-Inputs confirmed disconnected by the user. No analog sample has been captured yet.
-
-
-## Genuine raw capture — driver v7
-
-ADC/mapping milestone commit: `1b78b14`. Native capture CLI and interrupt-driven
-RISC ring now compile and have run on the card. No completion polling fallback
-is used. IOInterruptDispatchSource enable and actual callbacks work on this macOS
-with the legacy endpoint, despite the SDK's MSI-only description.
-
-- v5/v6 pre-start attempts: zero-byte files, no bus mastering. An incorrect static
-  equality check on live DMA counters/pointer caused rejection. Datasheet p6-85
-  says CNT2 starts consuming CDT entries. V7 verifies static SRAM CDT/CMDS instead.
-- First v7 8 MiB attempt: watchdog ambiguity limit fired before a completion event;
-  stopped safely after ~112 ms, zero output, command restored. No silent retry.
-- Disconnected, 64 MiB ring, 1 s: 28,636,363 bytes; 111 IRQ callbacks, codes 110..112,
-  all 109 full 256 KiB blocks unique, no reported hardware/overrun errors.
-- Disconnected, warmed 8 MiB ring, 1 s: same byte count, 111 callbacks and **3 ring
-  wraps**; all 109 full blocks unique. This does not resolve the cold small-ring
-  startup limitation. Default remains 64 MiB.
-- Disconnected, 64 MiB ring, 10 s: 286,363,630 bytes; 1094 callbacks, 4 wraps; all
-  1092 full blocks unique; no reported hardware/overrun errors.
-- PAL MiniDV CVBS, RCA, VMUX1, level=0, sixdb=0, offset=8, 5 s: 143,181,815 bytes;
-  548 callbacks, 2 wraps; all 546 full blocks unique; codes 70..159, mean 110.796,
-  stddev 14.969, no samples at 0 or 255. Sync-like pulse spacing about 63.94 us
-  (~15.64 kHz at nominal sample rate), strong spectral carrier near 4.4341 MHz.
-  These are approximate uncalibrated diagnostics, not exact PAL clock measurements.
-- RCA VMUX0 comparison, 1 s: genuine signal also present (codes 70..187), consistent
-  with white-card C31 input sharing. VMUX1 responds compared to the disconnected
-  baseline and is usable; exclusive connector-to-channel wiring is not claimed.
-
-Every successful run verified disabled video DMA, transfer-in-progress zero,
-unchanged counter across shutdown observations, untouched 16 KiB DMA guard,
-PCI command restoration to 0000 and successful CompleteDMA cleanup. Hardware
-register settings are read back before capture. Metadata separates delivered
-full DMA blocks from the exact byte prefix written for the requested nominal
-sample duration. Timing includes startup/teardown and does not calibrate the clock.
-
-Hashes plus RISC counter observations detect several failure modes; they do not
-prove analog sample order or zero loss. Dropped-sample count remains null. At this milestone RF had not been attempted;
-CVBS-Decode and subsequent RF results follow below.
-
-
-Hardware cancellation tests on v7 (real PAL CVBS data, 64 MiB ring):
-SIGINT finalized 20,971,520 bytes with complete sidecar and exit 0; SIGKILL left
-22,020,096 bytes and the initial incomplete sidecar, but user-client closure stopped
-DMA. A three-second SIGSTOP of the child consumer triggered one explicit overrun
-event, stopped the hardware, then returned failed metadata/exit 1 after SIGCONT.
-All three independently verified command 0000, video DMA off, stop verification,
-no quarantine, and transfer status zero. No unrelated process was signalled.
-These are consumer cancellation/overrun tests, not disk-full or unplug tests.
-
-## Sustained CVBS and decoder validation — driver v8 / API 5
-
-Real RCA PAL input, card and C31 unmodified, nominal 28.636363 MSPS:
-
-| Capture | Bytes | IRQ callbacks | Observed wraps | Result |
-| --- | ---: | ---: | ---: | --- |
-| v7 CVBS, 60 s | 1,718,181,780 | 6,556 | 25 | complete, no reported DMA/overrun errors |
-| v8 AGC disabled, 5 s | 143,181,815 | 548 | 2 | decoded 225 PAL fields |
-| v8 AGC disabled, 10 s | 286,363,630 | 1,094 | 4 | decoded 498 PAL fields |
-
-All 6,554 full 256 KiB chunks in the 60 s capture and all 1,092 in the v8 10 s
-capture were unique. This exposes stale blocks, but does not prove zero sample
-loss. Stop verified, guard intact, transfer status zero, PCI command restored to
-0000. The ten-second sample codes span 60..196; no rail clipping. No calibrated
-sampling-clock measurement or authoritative dropped-sample counter exists.
-
-Baseline CVBS settings VMUX1/level 0/sixdb 0 show sync-tip mean ~72.45, porch ~100.05,
-threshold-estimated line period ~63.936 us (~15,640.5 Hz using the nominal clock),
-and chroma-band peak ~4.43407 MHz. These are approximate first-second diagnostics,
-not a precise PAL timing or clock calibration. VMUX0 also receives RCA. Sixdb1
-comparison clipped low and did not achieve field lock; sixdb 0 remains default.
-
-The upstream-enabled ADC AGC configuration initially failed CVBS field lock
-(0-byte TBC, despite decoder exit 0). Original Conexant INPUT_FORMAT bit13
-AGCEN is explicitly documented: clearing only this gate via `--agc-enable 0`
-produced recognizable decoded video. All other raw registers remain the pinned
-Linux configuration. The optional setting is recorded in status/sidecar; default1
-preserves upstream. No CVBS decoding/filtering is added to the driver.
-
-Built pinned VHS-Decode 177b505 in an isolated Python 3.12 environment from a Git
-archive under build/; original reference checkout unchanged. Verified help and
-ran `cvbs-decode --frequency 28.636363 --pal -A INPUT.u8 OUTPUT`. The 5 s decode
-contains 225 fields with decodeFaults=0, syncConf=45; startup skipped ~0.486 s.
-The 10 s decode contains 498 fields with decodeFaults=0; 52 have syncConf100 and
-446 syncConf=45. Both emitted a startup missing-data warning. This is a decoder
-observation, not evidence establishing a DMA loss count. A single-field monochrome
-preview was visually inspected and shows recognizable source imagery.
-
-V8 DMA self-test succeeded using the existing interrupt source; a subsequent
-10 s capture confirms the test no longer disturbs capture interrupt registration.
-Native arm64 builds, ASan/UBSan RISC tests, three statistics unit tests and the
-attachment snapshot check pass. A further real 2 s capture verified the CLI's
-idle-sleep assertion appears during capture and is released after exit 0. The first
-agent-sandbox attempt was denied IOServiceOpen e00002e2 before creating samples;
-the permitted outside-sandbox run succeeded. No security settings were changed.
-Idle defaults restored to AGC 1/VMUX1/level 0/sixdb 0/offset 8, PCI command0000,
-video DMA=0, running=0, stop_verified=1, quarantine=0. Forced sleep, disconnection,
-disk-full and archival durations remain untested. At this milestone VHS RF was
-still pending; the subsequent successful RF test is recorded below.
-
-Milestone commits: `1b78b14` (ADC/readback and 32-bit mappings), `4ea0fd5`
-(genuine raw streaming, IRQs and teardown). Subsequent v8 CVBS validation is
-recorded in the next focused commit; use Git history for its full hash.
-
-The v8 AGC-disabled 10 s capture's first nominal second measures ~63.9946 us
-(~15,626.3 Hz), sync tip ~71.70 and porch ~102.27 at threshold80; chroma peak
-~4.43405 MHz. Unlike the earlier AGC-enabled baseline, this is close to PAL line
-timing. These diagnostics still assume the nominal oscillator. Startup settling
-and decoder confidence remain limitations; no precise frequency calibration.
-V8 capture/decoder milestone committed as `8a4d842`.
-
-## Normal colour export
-
-Official TBC Tools v3.3.0 macOS arm64 release, tag commit
-`9ce60e193e981b842889cca133f77126ce4c7954`; downloaded asset SHA256 matches the
-GitHub release digest recorded in references/manifest.json. Mounted read-only,
-copied into ignored build/tbc-tools.app, with no system installation or security
-changes. Help verified before execution:
+## Automated tests
 
 ```sh
-build/tbc-tools.app/Contents/MacOS/tbc-video-export --profile ffv1 --no-dropout-correct --threads 4 artifacts/cvbs-agc0-v8-10s-decoded.tbc artifacts/cvbs-agc0-v8-10s-export
+./scripts/test.sh
 ```
 
-Exit 0, completed in ~4.2 s. Export used automatic PAL TRANSFORM3D colour decoding
-and automatic field order (resolved TFF), no dropout correction. FFprobe counted
-249 video frames: FFV1, 928×576, yuv422p10le, 25/1 fps, top-field-first, duration
-9.96 s. File size 147,550,617 bytes. PNG frames at 1/5/9 s were visually inspected:
-recognizable colour source video across the recording, with visible chroma/luma
-artefacts. No perfect-colour, archival-quality or zero-loss assertion. Output is
-`artifacts/cvbs-agc0-v8-10s-export.mkv`; comparison preview is
-`artifacts/cvbs-agc0-v8-10s-contact.png`. All captures/exports remain ignored.
+The RISC/ADC suite runs with AddressSanitizer and UndefinedBehaviorSanitizer. It
+covers instruction encoding, scatter/gather boundaries, 32-bit address bounds,
+alignment, page counters, interrupt cadence, ring advancement and option bounds.
+Python tests cover analytical byte statistics, empty input and exact recognition
+of pinned-decoder replacement-field metadata, including rejection of unexplained
+changes. No automated test starts hardware capture.
 
-The current source clone uses tbc-analyse, the successor to ld-analyse. Desktop
-inspection could not be completed: computer-use rejected the app path and denied
-Finder access. No permission bypass attempted. Only decoded-file statistics and
-exported image inspection are verified; interactive GUI inspection remains open.
-The export runtime also needed outside-sandbox execution after its semaphore was
-denied inside the agent sandbox. This is not a DriverKit signing/DMA blocker.
+Build/release-preparation regression results are recorded in
+[the publication audit](docs/PUBLICATION-AUDIT.md). Hardware-test scripts are
+opt-in, separate from this suite:
 
-The first source-build attempt targeted stale VHS-Decode CMake paths (missing
-C++ tool directories). Homebrew qwt/fftw were installed for that attempt; the
-current TBC-tools source additionally requires ONNX Runtime/submodules. Instead
-of extending those dependencies, the published native release was used. No claim
-is made that the current TBC-tools source was locally compiled or CI-validated.
+- `scripts/check-probe.py` checks the saved attachment snapshot; no new MMIO.
+- `scripts/test-hardware-stop.py --hardware MODE` captures real samples and signals
+  only its own child CLI. It is not a routine release-cleanup check.
 
-## First real VHS RF acceptance
+## Actual hardware progression
 
-See [docs/RF-FIRST-CAPTURE.md](docs/RF-FIRST-CAPTURE.md) for reproducible commands
-and actual results. Driver v8 required no code changes: the general raw ADC engine
-captured a real playing VHS RF source via RCA. The one-second sample decoded into
-48 PAL fields, and the ten-second sample into 498 fields. Normal offline export
-produced recognizable colour video, inspected at multiple points in the ten-second
-recording. This establishes initial short-duration end-to-end RF success.
-Multi-minute/archival reliability, exact clock, calibrated signal quality, loading,
-forced sleep and active disconnection remain unverified. No zero-loss claim.
+All durations below use nominal 28.636363 MSPS unsigned 8-bit samples. Successful
+captures had complete metadata, reported no DMA/overrun errors and verified safe
+stop with PCI command restored to 0000. This is not a zero-sample-loss assertion.
 
-## Full-minute PAL S-VHS and TBC validation
+| Test | Raw bytes | Observed result |
+| --- | ---: | --- |
+| Disconnected input,1 s |28,636,363 |111 IRQ callbacks;109 unique full 256 KiB blocks; codes 110–112 |
+| Disconnected input,10 s |286,363,630 |1,094 callbacks;4 wraps;1,092 unique full blocks |
+| Warm8 MiB ring,1 s |28,636,363 |3 ring wraps; cold-start limitation remains |
+| PAL MiniDV CVBS,60 s |1,718,181,780 |6,556 callbacks;25 wraps;6,554 unique full blocks |
+| AGC-disabled PAL CVBS,10 s |286,363,630 |498 decoded PAL fields;249 colour frames,9.96 s |
+| First PAL VHS RF,1/10 s |28,636,363 /286,363,630 |48/498 decoded fields; recognizable colour video |
+| PAL S-VHS RF,60 s |1,718,181,780 |2,998 fields using saved levels;59.96 s FFV1 |
+| Post-C31 RF,60 s |1,718,181,780 |2,994 fields;59.88 s FFV1; matched comparison below |
+| Level31 T7 preflight,60 s |1,718,181,780 |codes 36–181, no rail samples; first 5 s decoded to 250 fields |
+| Full-tape level 31 RF,2,700 s |77,318,180,100 |294,947 callbacks;1,152 wraps; full decode/export verified |
 
-See [docs/RF-ONE-MINUTE.md](docs/RF-ONE-MINUTE.md). New real RF capture: 60 s,
-1,718,181,780 bytes, 25 wraps, no reported DMA faults/overruns, verified teardown.
-After the user clarified S-VHS/S-VHS ET, a VHS-mode run was interrupted. Default
-S-VHS and a bounded ET probe failed to acquire the first 7.7 s; the documented
-`--use_saved_levels` option recovered near-start acquisition. The full corrected
-S-VHS run produced 2,998 fields with no log warnings/errors or duplicate flags;
-TBC sizes and metadata agree. Export: 1,499 frames, 59.96 s, 928×576, 25 fps, FFV1.
-No dropout correction applied. 364 detector-reported dropout segments remain.
-Colour frames near 1/30/58 s visually verified. The user reports rare tears; their
-cause is unverified. No uncorrected/corrected quantitative TBC benchmark or
-calibrated SNR claim. All-fields syncConf=45 is a heuristic, not 45% success.
-New check_decode.py ran successfully on actual 1 s/10 s RF, 10 s CVBS, full S-VHS
-and bounded ET/level probes; py_compile and git diff checks pass. No driver change
-required and no new native-driver build claimed. MP4 was cancelled, not generated.
-C31 remains intact in this before-modification baseline. Idle hardware is stopped
-with PCI command 0000 and no quarantine.
+### PCI, ADC and DMA bring-up
 
-## Post-C31 comparison
+Initial attachment identified the independent `14f1:8800` endpoint behind the
+ITE bridge. Bounded memory-decode enable/read/restore changed PCI command
+0000→0002→0000. BAR0 is 16 MiB. Legacy interrupt routing appeared after Open;
+actual callbacks later worked despite absent initial registry routing properties.
 
-[docs/C31-COMPARISON.md](docs/C31-COMPARISON.md) records the complete test.
-Actual capture passed byte/metadata checks, 25 wraps, 6,554 unique full blocks,
-no reported DMA faults/overruns and verified shutdown. Full S-VHS decode with
-unchanged `--use_saved_levels` completed: 2,994 fields, 1,497 frames, 59.88 s.
-Eighteen startup acquisition errors preceded lock at source ~0.114 s; no later
-log warnings/errors, duplicate flags or nonzero fault bitmaps. TBC byte counts
-agree; normal FFV1 export inspected at three matched scene times. No MP4.
-Content alignment found 4.44 s offset, yielding 55.44 s common material. Matched
-dropout segments 318→295, while bPSNR 39.7→38.6; ADC span 97..120 unchanged.
-These mixed diagnostics do not establish improved SNR, stronger ADC input or
-elimination of rare tears. No native code changes or new driver build required.
-Existing capture/decode diagnostics and git diff checks passed on the new files.
+Static ADC initialization/readback and `--dma-check` were validated before
+mastering. Device-bound IODMACommand mappings used32-bit IOVAs; sample mapping
+was64 MiB and the RISC mapping contiguous. Mapping/CPU round-trip tests alone
+were not counted as hardware DMA evidence. Real raw streaming subsequently
+exercised RISC execution, interrupts, ring wraps and shutdown.
 
-## RF gain and live SCART test
+Observed startup/readback failures were resolved before the working v8 baseline:
 
-See [docs/RF-GAIN-SWEEP.md](docs/RF-GAIN-SWEEP.md). Actual five-second captures
-at levels 0/4/8/16/24/31, sixdb 0, all 143,181,815 bytes and complete metadata.
-All had 546 unique full blocks, 548 interrupt callbacks, 2 wraps, no reported
-DMA faults/overruns, verified stop and exact PCI command restoration. No samples
-at 0/255. ADC spans respectively 20/26/32/53/90/146 codes. Level 31 min/max 36/182.
-The user reported no visible SCART change during both groups of gain tests.
+- OUTPUT_FORMAT writes0f/read0e: reserved read-only bit0 is excluded from equality
+  checks using Conexant datasheet 101069A p6-72.
+- DEV_CNTRL2/RUN_RISC is write-only; readback cannot establish engine state.
+- Live CNT/pointer values are not static latches; CNT2 begins CDT consumption.
+  Static SRAM descriptors/commands are checked instead.
+- The first cold 8 MiB capture hit conservative watchdog ambiguity and stopped
+  safely with zero output. A warm small-ring test passed;64 MiB remains default.
 
-Levels 0/16/31 decoded fully with the unchanged PAL S-VHS level-reuse profile:
-248 fields each, no log WARNING/ERROR,duplicate flags or nonzero fault bitmaps;
-TBC byte counts agree. Normal colour FFV1 exports completed and frames were
-visually inspected. Decoder bPSNR 38.6/40.0/40.6 is not calibrated SNR; the clips
-contain different scenes, so no controlled noise/quality improvement claim.
-No full decode of intermediate levels 4/8/24. Level 31 is a longer-trial candidate,
-not globally qualified or proven to eliminate rare tears. Restored idle level 0,
-DMA/mastering off, stop_verified=1, no quarantine. No driver changes/build needed.
-Existing capture/decode checks and git diff checks pass. No MP4. 76 GiB free.
+Shutdown tests check engine/FIFO controls, transfer-in-progress zero, stable
+counter observations, intact 16 KiB guard, mastering off, exact PCI command
+restoration and CompleteDMA. Failure quarantines mappings rather than releasing
+them unsafely. No CX23885 register semantics are assumed.
 
-## Screenshot streak and dropout correction
+### Cancellation and explicit failure reporting
 
-[docs/DROPOUT-INVESTIGATION.md](docs/DROPOUT-INVESTIGATION.md) records the exact
-frame test. Screenshot matched the first decoded minute at 25.12 s; metadata
-flags affected lines. Same defect and near-matching dropout coordinates recur
-at 29.56 s in the post-C31 pass, accounting for its 4.44 s earlier start. A
-separate standard FFV1 export with dropout correction enabled completed and
-visibly concealed the exact streak. Original raw checksum unchanged. Full
-corrected export 59.96 s/1,499 frames; 346 concealments reported by exporter.
-This supports a repeatable tape/playback dropout, not a proven random cable,
-DMA or gain fault. VCR processing may explain the cleaner SCART comparison.
-No original-detail recovery, universal artifact fix or amplifier necessity claim.
-No new capture, driver code/build, physical change or MP4.
+Real v7 CVBS hardware tests with 64 MiB ring:
 
-## T7 full-tape storage preflight
+| Test | Result |
+| --- | --- |
+| SIGINT |20,971,520 bytes; complete sidecar; exit 0 |
+| SIGKILL |22,020,096 bytes; incomplete sidecar; user-client closure stopped DMA |
+| Consumer SIGSTOP for3 s, then SIGCONT |Explicit overrun; failed metadata/exit 1 |
 
-External T7 mounted read/write APFS. Created a new CXADC/2026-10-21-tape-01
-folder with raw/logs/exports/scratch; no existing files changed. Temporary 256 MiB
-write/fsync test passed at ~774 MB/s and its file was automatically removed.
-This is a storage test, not simulated RF or proof of long sustained throughput.
-No real capture to T7 yet. Driver v8 remains idle, command 0000, DMA off, no quarantine.
-Prepared an unstarted 45-minute plan, nominal 77.32 GB raw, candidate level 31.
+Each independently verified DMA off, stop verification, command 0000 and no
+quarantine. These are consumer tests, not disk-full, forced-sleep or unplug tests.
+An idle-sleep assertion was observed during a real2 s capture and released after
+exit. It does not validate forced sleep/wake.
 
-Space for 44 minutes retaining everything is nominal 303 GB (~330 GB budget),
-including 75.6 GB raw, 187.6 GB TBC pair and ~40 GB FFV1. T7 initially had 171.6 GB
-free, then showed ~323 GB on repeat checks; the agent deleted no user files.
-User selected staged decoding, with only generated TBCs discarded after
-verification; chunk-boundary validation remains unimplemented/unverified.
-See docs/FULL-TAPE-STORAGE.md. No full-tape capture has started.
+### PAL CVBS
 
-## Real T7 RF preflight, level 31
+Before C31 removal, RCA/VMUX1 produced clear signal change from the disconnected
+baseline, approximate64 µs line periodicity and a carrier near 4.434 MHz. VMUX0
+also received it, so the channels were not assumed independent.
 
-2026-10-21: user confirmed playback ready. Captured 60 seconds of genuine RF to
-`/Volumes/T7/CXADC/2026-10-21-tape-01/raw/preflight-level31-60s.u8`, using v8,
-VMUX1/level31/sixdb0/offset8/AGC1 and a 64 MiB ring. Exactly 1,718,181,780 bytes;
-complete sidecar, writer errno 0, 6,556 interrupt callbacks, 25 ring wraps,
-zero reported overruns/DMA errors. Stop verified, command restored to 0000,
-DMA off and no quarantine; conservative idle level 0 restored afterwards.
+Default enabled ADC AGC failed CVBS field lock despite decoder exit 0. Clearing
+the documented AGCEN gate (`--agc-enable 0`) produced recognizable PAL video;
+RF kept the reference AGC-enabled setting. No CVBS processing is in the driver.
+A 5 s CVBS decode produced 225 fields with startup exclusion;10 s produced 498 fields.
+The 10 s FFV1 export is 928×576,25 fps, yuv422p10le/top-field-first. Offline decoder
+warnings do not by themselves establish a hardware sample-loss count.
 
-Entire-file NumPy histogram and SHA-256/block-hash analysis: codes 36..181,
-mean 120.7384, standard deviation 25.4008 codes, no samples at 0 or 255.
-All 6,554 full 256 KiB chunks unique, no adjacent identical chunks. SHA-256:
-`afe0dee963b92a0679130d5db9aeead92f239b4d21d35ecbade157ca42b24518`.
-Analysis JSON retained locally in artifacts and in the T7 session logs.
-Counters/hashes do not establish zero sample loss or calibrated clock accuracy.
+### RF gain, C31 and dropout observations
 
-Pinned VHS-Decode, PAL/SVHS, 28.636363 MHz, `--use_saved_levels --length 125`:
-first five seconds decoded to 250 fields, matching luma/chroma byte counts,
-alternating parity, no duplicate flags or logged ERROR/WARNING. Rounded source
-gaps 0.9..1.1 fields, 38 detected dropout segments across 21 fields. These are
-decoder diagnostics, not DMA loss measurements. No full-minute decode or
-44-minute capture verified by this test.
+- Initial level 0 RF used only about 97–120 codes yet decoded successfully.
+- After operator-reported C31 removal the same range remained. A matched55.44 s
+  interval showed dropout segments318→295 and bPSNR diagnostic39.7→38.6: mixed
+  evidence, not a proven amplitude/quality improvement.
+- Six5 s captures at levels0/4/8/16/24/31, sixdb 0, passed. Range expanded from
+  99–119 to 36–182, without rail samples. Levels0/16/31 decoded successfully.
+  Scenes differed, so comparative quality/SNR improvement is not established.
+- The operator reported unchanged live SCART during all gain steps; this did not
+  measure tap-connected versus disconnected loading.
+- A repeatable bright streak matched the same tape moment and dropout coordinates
+  across two passes. Standard dropout correction visibly concealed it using the
+  existing data. It does not prove an amplifier is unnecessary for other defects.
 
-Standard dropout-corrected FFV1 preview exported successfully: 125 frames,
-5.000 seconds, 928×576 at 25 fps, 77,302,510 bytes; 32 reported concealments.
-Inspected the frame at two seconds: recognizable colour garden/football scene.
-This checks one exported frame, not every frame or comparative image quality.
-Preview retained as artifacts/t7-preflight-level31-preview-export.mkv.
+Detailed historical reports: [first RF](docs/RF-FIRST-CAPTURE.md),
+[one-minute S-VHS](docs/RF-ONE-MINUTE.md), [C31](docs/C31-COMPARISON.md),
+[gain](docs/RF-GAIN-SWEEP.md), [dropout](docs/DROPOUT-INVESTIGATION.md).
+Those reports describe their own milestone, not later compatibility guarantees.
 
-## Full 45-minute T7 capture completed; full decode running
+## Full-tape result
 
-2026-10-21: user requested capture before pressing play. Raw file:
-`/Volumes/T7/CXADC/2026-10-21-tape-01/raw/tape01-pal-svhs.u8`.
-v8/API5, VMUX1/level31/sixdb0/offset8/AGC1, 64 MiB ring. Requested 2,700 seconds,
-exactly 77,318,180,100 bytes verified against the complete sidecar and file stat.
-Host elapsed 2,700.284 seconds, 294,947 interrupt callbacks, 1,152 ring wraps;
-zero reported overruns, driver errors or writer errors. Stop verified, DMA off,
-PCI command restored to 0000, no quarantine. Idle level0 restored afterwards.
-No authoritative dropped-sample count or full-file continuity proof claimed.
+The 45-minute raw file is 77,318,180,100 bytes, matching its complete sidecar. Host
+elapsed 2,700.284 s; no reported driver, overrun or writer errors. Stop verified,
+DMA off, command restored0000, no quarantine. Idle level 0 restored afterwards.
+A selection of 18 one-second windows across the capture had no rail samples;
+this is not a complete histogram or full-file continuity proof.
 
-Selected 18 one-second ADC windows from start through second2699: no rail
-samples; typical programme windows codes35..181, means near120.7. Initial
-window near120.16/std0.87 is consistent with pre-play lead-in; last windows have
-lower AC energy. Sampling windows do not establish absence of clipping in every
-sample or identify all recorded tape content. Analysis saved in artifacts.
+PAL/SVHS decoding at 28.636363 MHz with `--use_saved_levels` produced 134,826 fields,
+67,413 frames and 44:56.52 output. Both TBCs contain95,795,221,260 bytes, exactly
+matching field dimensions/count; field parity alternates. The decoder reported
+22,612 dropout segments in8,812 fields and two replacement-field events. Initial
+pre-play lead-in produced acquisition errors; decoded source begins near 3.71 s.
 
-At decode start T7 had 244.17 GB free and internal data volume 81.03 GB.
-Launched pinned PAL/SVHS decode, 28.636363 MHz, saved levels, two threads, full
-raw input. TBC prefix on T7: `scratch/tape01-pal-svhs-full`; eventual normal
-dropout-corrected FFV1 prefix internally: `artifacts/tape01-pal-svhs-full-dropout-corrected`.
-Initial lead-in produced field-acquisition errors; decoder subsequently locked
-(first logged source frame93) and is advancing normally. Full decode/export
-has not completed or been validated yet; no full-tape image-quality claim.
+The first automatic export was blocked by an overly strict sequential-number
+check. Pinned decoder readfield()/lastvalidfield inserts earlier field data with
+its old metadata. Four mismatching metadata positions are exactly explained by
+two insertions; copied metadata equals that two entries earlier and the following
+field is explicitly flagged. The validator now distinguishes this precise pattern
+from unexplained mismatches. Original JSON/TBCs were not renumbered or edited.
+This is not a count of hardware DMA discontinuities.
 
-New `tools/decode_full_tape.py` orchestrates decode, TBC byte-count checks and
-automatic standard-DOC export, with 20 GB free-space guards and recorded
-commands/state. No raw/TBC cleanup. `caffeinate -i` prevents idle system sleep.
-Syntax/help and actual launch/initial decoding verified. Export/low-space and
-interruption branches of this new runner remain untested; existing short DOC
-export itself was verified separately. State file in artifacts ends `.workflow.json`.
+The standard dropout-corrected export is 40,067,321,047 bytes, FFV1 MKV,
+928×576/25 fps/yuv422p10le/top-field-first. Duration2696.52 s matches decoded fields.
+The exporter reports 22,637 concealments. A full-file FFmpeg video decode with
+`-xerror` exited0 and logged no errors. Opening/middle/late programme stills were
+visually checked; trailing noise beyond the programme was retained. Spot checks
+do not establish every frame's visual quality. There is no captured audio.
 
-## Full decode complete; DOC export resumed
+## Unverified cases
 
-Full decode exited successfully at 22:18 local: 134,826 PAL fields, 67,413 frames,
-44:56.52 decoded duration. Luma and chroma each 95,795,221,260 bytes, matching
-declared field count exactly; field parity alternates throughout. Decoder
-reported 22,612 dropout segments in 8,812 fields and two replacement-field
-events. These are decoder diagnostics, not authoritative capture-loss counts.
+- Calibrated sampling clock, analog gain/SNR, impedance and VCR loading.
+- Authoritative dropped-sample detection; reported count remains null.
+- Repeated long captures, other decks/cards/enclosures and other Macs/OS versions.
+- Active hot-unplug, forced sleep/wake, disk-full recovery and faulted teardown.
+- Signed/notarized distribution on default-security machines.
+- GUI tbc-analyse inspection, stdout streaming, audio, compression and other modes.
 
-The original workflow stopped before export because its strict seqNo check
-rejected four metadata positions associated with those two events. Investigation
-of pinned `lddecode/core.py` readfield()/lastvalidfield writeout and
-`vhsdecode/process.py` shows that an inserted prior field retains its old metadata;
-the following flagged field was numbered before insertion. At output positions
-15,417 and 118,935, reused metadata equals the metadata two positions earlier;
-each is followed by a flagged duplicate with fault bit4. No other numbering
-mismatches. Original JSON/TBCs preserved, with no renumbering or sample edits.
-The referenced TBC-tools JSON reader appends fields in array order and getField()
-indexes that array, rather than sorting it by seqNo.
-
-`check_decode.py` now reports exact recognized filler patterns separately from
-unexplained mismatches; the runner permits the recognized pattern with count,
-parity and byte validation intact. Five focused metadata-fixture tests passed,
-including rejection of missing flags, modified copied metadata and unrelated
-numbering faults. Python compilation/help passed.
-
-Added `--export-existing` to resume validated TBC export without repeating decode
-or overwriting the original failed workflow record. Full FFV1 export started
-with default dropout correction, four threads and the existing 20 GB disk guard.
-New `.export-workflow.json` records this attempt; original `.workflow.json` is
-retained as failure evidence. Full export completion/visual review pending.
-
-Full DOC export subsequently completed successfully at 22:48 local in 9:50.043.
-Output `artifacts/tape01-pal-svhs-full-dropout-corrected.mkv`:
-40,067,321,047 bytes, 2,696.52 seconds (44:56.52), 928×576, 25 fps, FFV1,
-yuv422p10le, top-field-first. Duration agrees with 134,826 PAL fields. Exporter
-reports 22,637 dropout concealments; this is not a sample-loss measurement.
-Existing raw and both TBCs retained. Internal free space ~38 GiB, T7 ~49 GiB.
-
-FFmpeg decoded the first five seconds without errors. Inspected exported PNGs
-at 3, 1,200 and 2,500 seconds: recognizable colour garden, interior and outdoor
-programme scenes. At 2,695 seconds output is noise beyond the recorded programme;
-the full output deliberately retains it. These spot checks do not establish
-every frame's visual quality. No audio acquisition was added and no MP4 made.
-
-Final full-file FFmpeg read/decode (`-v error -xerror -threads 8`, video stream
-to null) exited 0 with an empty error log. This verifies the entire FFV1 file
-can be decoded, not that every frame is free of tape/playback artifacts.
-Eight Python diagnostic tests passed. Full capture/decode/export milestone is
-verified for this single tape; unplug/sleep/recovery and additional long runs
-remain separate unverified cases.
+One successful long capture is evidence of this configuration, not a universal
+stability or archival-quality certification.

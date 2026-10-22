@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+// Linux-derived hardware portions adapted for macOS, 2026-10-21.
+// Upstream copyrights/license and modification scope: THIRD_PARTY_NOTICES.md.
 #pragma once
 #include "DmaMemory.hpp"
 #include "../core/Risc.hpp"

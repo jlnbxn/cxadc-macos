@@ -1,5 +1,9 @@
 # First genuine VHS RF capture and decode
 
+Historical test report for the stated milestone. Later verification and current
+limitations are summarized in [TESTING.md](../TESTING.md). Media and diagnostic
+artifacts mentioned here are private, ignored local evidence, not repository files.
+
 2026-10-21, branch feature/cx23880-cxadc-macos, existing driver v8 / API5.
 No driver code change was needed after the successful CVBS milestone.
 
@@ -102,12 +106,8 @@ Raw SHA256 provenance:
 ec7574456a141448aa58fb8994de9ed8e504a2788e3c83b2755cd73a3975a1f7  rf-v8-60s.u8
 ```
 
-An optional Matplotlib spectrum-render attempt aborted with unavailable font
-cache access in the agent sandbox. Pure NumPy spectral analysis subsequently
-completed; no spectrum plot from that failed attempt is claimed. Exported-video
-PNGs were generated and inspected successfully. Prior GUI computer-use denial
-remains: no interactive tbc-analyse inspection is claimed. No binaries or captures
-are committed; the existing CX23885 project remains clean and unchanged.
+External analysis/export dependencies are not part of the native driver build.
+No media, binaries or reference checkouts are committed.
 
 ## Scope of success and remaining work
 

@@ -1,142 +1,161 @@
-# Observed hardware — 2026-10-21
+# Verified hardware and experimental RF path
 
-Read-only inspection on the development Mac. Unredacted command output stays in
-ignored `artifacts/discovery/`; this report excludes serial numbers and host UUIDs.
+The results below describe one physical setup, tested on 2026-10-21. Software
+observations and operator-reported construction details are distinguished.
+No device serial numbers, host UUIDs or unredacted system logs are published.
 
-| Item | Observed value |
+## Host and PCI topology
+
+| Item | Observation |
 | --- | --- |
-| macOS | 26.7.1, build 25G241 |
-| CPU architecture | arm64; Apple M3 Max; Mac15,8 (sysctl verified) |
-| Xcode | 27.0, build 27A266a |
-| Installed SDKs | macOS 27.0, DriverKit 27.0 (also mobile SDKs) |
-| Enclosure | OWC Express 1M2; USB4; link reported 40 Gb/s; firmware 12.34 |
-| PCI path | USB4 / ASMedia `1b21:2463` bridges / ITE `1283:8893` / Conexant |
-| ITE | `1283:8893`, revision `52`, PCI `3:0:0`, bridge class `060401` |
-| Capture endpoint | `14f1:8800`, revision `05`, PCI `4:0:0`, class `040000` |
-| Subsystem | `4e4f:4553` |
-| Additional function | `14f1:8804`, PCI `4:0:4`, class `048000`, same subsystem |
-| BAR0 assigned bus range (8800) | `0x02000000`, size `0x01000000` (16 MiB) |
-| BAR0 CPU aperture (8800) | IODeviceMemory address `0xe02000000`, 16 MiB |
-| BAR0 assigned bus range (8804) | `0x01000000`, size 16 MiB |
-| BAR0 CPU aperture (8804) | IODeviceMemory address `0xe01000000`, 16 MiB |
-| DMA mapper | IODARTMapper reported, mapper page size 16384 |
-| Endpoint capabilities in IORegistry | power management `0x4c`, VPD `0x44` on 8800 |
-| MSI | system_profiler says No; no MSI capability in endpoint registry |
-| Interrupt routing | no IOInterruptControllers or IOInterruptSpecifiers exposed on either endpoint |
-| Initial driver claim | system_profiler: Driver Installed No; no child driver in IORegistry |
+| Host | Apple M3 Max, arm64, Mac15,8 |
+| Runtime OS | macOS 26.7.1, build25G241 |
+| Toolchain | Xcode 27.0 build27A266a; macOS/DriverKit SDK 27.0 |
+| Enclosure | OWC Express 1M2; USB4, reported 40 Gb/s link; firmware 12.34 |
+| Topology | USB4 → ASMedia `1b21:2463` bridges → ITE `1283:8893` → Conexant |
+| Bridge | `1283:8893`, PCI revision`52`, class`060401`, observed BDF 3:0:0 |
+| ADC endpoint | `14f1:8800`, PCI revision`05`, class`040000`, observed BDF 4:0:0 |
+| Endpoint subsystem | `4e4f:4553` |
+| Other function | `14f1:8804`, class`048000`, observed BDF 4:0:4; not matched |
+| BAR0, 8800 | 16 MiB; assigned bus address`0x02000000`, observed CPU aperture`0xe02000000` |
+| BAR0, 8804 | 16 MiB; bus`0x01000000`, CPU aperture`0xe01000000` |
+| DMA mapper | IODARTMapper; reported 16 KiB mapper page size |
+| Interrupts | Legacy level interrupt, index0/type 1; actual callbacks verified; no MSI observed |
 
-Assigned addresses are decoded from little-endian PCI cells; these are not DMA
-addresses. The CPU aperture above 4 GiB does not prove 32-bit DMA is impossible.
-`IOPCIDeviceMemoryMapBase/Size` are opaque registry properties, not BAR byte sizes.
-System Profiler's endpoint “Link down” corresponds to legacy non-PCIe link status
-`ffff`; it does not by itself establish a failed USB4 link.
+Addresses/BDFs are observations, not stable configuration or usable DMA addresses.
+The driver obtains its own BAR mapping and device-bound DMA translations.
+The bridge identity confirms the IT8893 family; the **IT8893E** suffix and
+**CX23880-19** chip marking are operator-reported, not readable from PCI IDs.
 
-The bridge identity confirms an IT8893-family device, not the exact E package
-suffix. The `CX23880-19` marking, board colour and connector wiring are user-supplied,
-not independently read from silicon. The presumed 28.636363 MHz oscillator and
-RCA/S-Video VMUX routing remain unverified. Enumeration cannot measure an oscillator.
+The white board is identified by the operator as **Y328**. A further silkscreen
+revision was not recorded; PCI revision 05 is a chip revision, not a PCB revision.
+No other white-board variant or CX25800 has been tested.
 
-SIP is observed disabled. `systemextensionsctl developer` reports developer mode
-already on. Neither setting was changed. An unsandboxed signing query finds one
-valid Apple Development identity; the sandbox incorrectly reported zero.
-The HVR-1200 ad hoc signed DriverKit v22 is activated/enabled, and its project
-supports local ad hoc development. This is evidence for trying the same path,
-not proof of CXADC activation or of Apple-granted PCI provisioning. No provisioning
-secrets were read or copied. Sandbox `systemextensionsctl list` failed with error 1;
-the same read-only query outside the sandbox succeeded.
+### Early attachment register evidence
 
-DriverKit v1 attached as com.example.CXADC.Driver with ad hoc signing and existing
-security settings. GetBARInfo verified BAR0 M32/16 MiB. PCI command is `0000`;
-interrupt config dword `37140100` (line 00, pin 01). GetInterruptType index 0
-returns success/type 1 (level), despite missing registry interrupt properties.
-This does not prove delivery; actual completion IRQs remain untested.
+The initial endpoint exposed power-management capability at0x4c and VPD at0x44.
+Before raw initialization, the v2 bounded register snapshot read the following
+hexadecimal byte offsets/values, temporarily enabling memory decoding and
+restoring PCI command0000 afterwards:
 
-V2 attachment temporarily changed PCI command `0000 → 0002 → 0000`; final readback
-verified restoration. No MMIO writes or DMA occurred. Interrupt dword then read
-`37140101` (line 01, pin 01). After Open, IORegistry now exposes
-`ApplePCIECLegacyIntController-apciec1` with specifier `<0100000000000000>`.
-Thus absent initial routing properties are not a proven interrupt limitation.
-
-| Register | Offset | Actual v2 attachment read |
+| Register | Offset | Attachment readback |
 | --- | --- | --- |
-| MO_DEV_CNTRL2 | 200034 | 45534e4f |
-| MO_PCI_INTMSK | 200040 | 00000000 |
-| MO_PCI_INTSTAT | 200044 | 00030000 |
-| MO_VID_INTMSK | 200050 | 00000000 |
-| MO_VID_INTSTAT | 200054 | 00000000 |
-| MO_DEVICE_STATUS | 310100 | 00000214 |
-| MO_INPUT_FORMAT | 310104 | 00004080 |
-| MO_PLL_REG | 310168 | 00f15f18 |
-| MO_SCONV_REG | 310170 | 00021f07 |
-| MO_AGC_SYNC_TIP3 | 310210 | 1e48e040 |
-| MO_AGC_GAIN_ADJ4 | 310220 | 006a2c34 |
-| MO_VBI_GPCNT | 31c02c | 00000000 |
-| MO_VID_DMACNTRL | 31c040 | 00000000 |
+| MO_DEV_CNTRL2 |200034 |45534e4f |
+| MO_PCI_INTMSK |200040 |00000000 |
+| MO_PCI_INTSTAT |200044 |00030000 |
+| MO_VID_INTMSK |200050 |00000000 |
+| MO_VID_INTSTAT |200054 |00000000 |
+| MO_DEVICE_STATUS |310100 |00000214 |
+| MO_INPUT_FORMAT |310104 |00004080 |
+| MO_PLL_REG |310168 |00f15f18 |
+| MO_SCONV_REG |310170 |00021f07 |
+| MO_AGC_SYNC_TIP3 |310210 |1e48e040 |
+| MO_AGC_GAIN_ADJ4 |310220 |006a2c34 |
+| MO_VBI_GPCNT |31c02c |00000000 |
+| MO_VID_DMACNTRL |31c040 |00000000 |
 
-All offsets/values above are hexadecimal. These are power-on/attachment observations,
-not the intended raw configuration. `MO_DEV_CNTRL2` notably equals the subsystem
-ID dword; do not substitute this readback for a documented reset value or infer
-undocumented bits. DEV_CNTRL2 is write-only, so its readback cannot establish RISC state. These
-were pre-configuration observations; Stage B subsequently applied raw settings. `mmio_valid` means the bounded reads did not return the API's
-all-ones failure sentinel; it does not prove analog signal fidelity or chip settings.
+These are observations, not recommended initialization values. DEV_CNTRL2 is
+write-only: its coincidental subsystem-like readback is undefined and cannot
+prove engine state. Interrupt config changed from37140100 before Open to
+37140101 afterwards; GetInterruptType returned index0/type1. Initial absence
+of routing properties was superseded by actual legacy interrupt delivery.
 
+## Enclosure, adapter and power
 
-Stage B signal tests: the user confirmed disconnected inputs for initial captures,
-then connected a known-good PAL MiniDV conventional CVBS output to RCA. VMUX1
-changed from a narrow 110..112 disconnected distribution to a clear CVBS waveform,
-70..159, with horizontal-sync periodicity and colour-carrier energy. VMUX0 also
-receives CVBS with C31 intact; no exclusive mapping is inferred. No physical card
-or VCR changes were made. Sixdb=0 follows the pinned CXADC control convention
-(bit 23=0); the old datasheet's INIT_6DB_VAL polarity description conflicts with
-the upstream off/on naming, so electrical boost calibration is still unverified.
+The operator reports an OWC Express 1M2 enclosure connected through an
+**M.2-to-PCIe adapter** to the Y328 card. The exact adapter model and its power
+routing have not been independently documented. The tested card ran **without an
+auxiliary Molex power connection**. This does not establish that another card or
+adapter can operate without auxiliary power, or that every M.2 adapter supports
+this legacy endpoint through USB4.
 
-With the documented INPUT_FORMAT AGCEN gate disabled, real PAL RCA raw captures
-were decoded into recognizable video (225/498 fields from 5/10 s). VMUX1 is
-verified usable for RCA, not uniquely mapped. No clock or electrical gain
-calibration is inferred from the decoder result.
+No bridge firmware was flashed. Initial enumeration showed the endpoint
+independently behind the ITE bridge and no existing endpoint driver. Opening the
+endpoint established legacy interrupt routing even though initial IORegistry
+properties did not expose it. “Link down” in System Profiler reflected legacy
+link-status reads and did not prevent capture.
 
-First RF test, 2026-10-21: after idle enclosure reconnection, the endpoint and v8
-DriverKit driver reattached and reported PCI command 0000/DMA off/no quarantine.
-User reports JVC playback RF test point → coax → card RCA, with a 68 nF ceramic
-series capacitor near the test point. C31 remains intact. Wiring is described as
-loose. This tap construction is user-reported, not physically inspected or
-electrically calibrated; VCR output loading remains unverified. A playing VHS
-tape produced real RF samples that VHS-Decode decoded into recognizable colour
-PAL video. This is distinct from the previous MiniDV CVBS test.
+## Clock and raw settings
 
-Second RF section was confirmed as PAL S-VHS/S-VHS ET by the user. With C31
-still intact, a full 60 s raw capture and near-full-minute S-VHS decode/export
-succeeded at the same level 0/sixdb 0 settings. The user plans C31 removal next.
-That physical change remains pending until reported; the saved minute is the
-before-modification baseline. Existing observations that RCA reached VMUX0/1
-are consistent with the pinned white-card C31 input-bridging description.
+The original stock oscillator was retained. Raw capture is configured for
+**nominal 28.636363 MSPS**, unsigned 8-bit, using the Linux reference's stock PLL
+and SCONV settings. The oscillator frequency has **not** been independently
+measured; byte counts and successful decoding do not calibrate it. No crystal
+modification or alternate sampling mode was tested.
 
-Post-C31 state, 2026-10-21: user reports successful capacitor removal and card
-reattachment. Physical removal is user-reported, not visually inspected by the
-agent. Read-only enumeration confirms the same endpoint14f1:8800/subsystem
-4e4f:4553 at4:0:0, BAR0 size16 MiB and driver v8/API5 attached. Live status:
-PCI command0000, video DMA=0, running=0, no quarantine or reported error. ADC
-initialized0 and cleared stream counters are consistent with fresh attachment;
-no post-modification capture has run yet. Internal SSD has85 GiB available.
-The existing intact-C31 captures remain the before-modification baseline.
+RCA works with VMUX1. Before C31 removal, VMUX0 also received the same composite
+source; no exclusive connector map is inferred. PAL CVBS acquired reliably with
+AGC disabled; RF tests retained AGC enabled. Level0/sixdb 0/offset 8 remains the
+conservative default. Level31/sixdb 0 was used in the full-tape RF test.
+Sixdb uses the reference driver's naming; actual analog gain/boost calibration
+and the old datasheet's polarity wording remain unresolved.
 
-Post-C31 real RF test completed with the same endpoint and unchanged settings:
-60 s raw capture, 1,718,181,780 bytes, 25 wraps, no reported DMA/overrun errors and
-verified idle teardown. User-reported removal is now associated with genuine
-captured data; the physical component itself was not inspected by the agent.
-ADC span stayed 97..120. Matched decoded-scene diagnostics are mixed; no clear
-amplitude or overall quality improvement is established. See docs/C31-COMPARISON.md.
+## JVC and temporary RF tap
 
-Live SCART-monitored gain sweep: user observed no visible SCART picture change
-during capture start/stop or levels 0/4/8/16, then separately confirmed no visible
-change at 24/31. Six five-second captures ran with C31 removed and sixdb 0. Code
-span increased from 99..119 at level 0 to 36..182 at level 31 with no rail samples.
-No instrumented loading measurement or tap-connected/disconnected comparison
-was performed. The amplifier/buffer question remains separate from code range.
-Hardware settings were restored to level 0/sixdb 0/offset 8/AGC 1 after testing.
+The JVC **HR-S7851EU remains electrically unmodified**, according to the operator:
+no internal soldered modification, firmware change or adjustment was performed.
+Temporary test-hook access is distinct from a permanent deck modification.
+The operator identifies the connections as **TP106 for playback RF** and
+**W1203 for the return/ground reference**. These are the reported connections on
+this deck, not an independently verified service-manual pinout for other models.
 
-Full-tape storage preparation identified the user-designated external T7 as a
-mounted read/write APFS USB SSD. A new CXADC project folder and small temporary
-write/fsync preflight succeeded. No actual RF recording to T7 or 44-minute
-sustained test yet. See docs/FULL-TAPE-STORAGE.md for the measured capacity,
-footprint and staged workflow. No existing storage files or partitions changed.
+The reported temporary arrangement uses miniature test hooks, PAL antenna coax,
+screw terminals and RCA adapters, with a **68 nF ceramic series coupling
+capacitor near the RF test point**, feeding the capture card's RCA socket.
+It was improvised and initially loose; no construction photograph is included.
+
+This arrangement produced decodable RF, but its input loading, impedance,
+frequency response, DC isolation under fault and grounding have not been
+instrumented. The 68 nF value is a record of this experiment, not a universal
+recommended tap design. A larger capacitor, buffer or amplifier was not tested.
+Verify the deck-specific RF/ground points and electrical isolation before
+reproducing a connection. Successful capture alone does not establish electrical
+safety or optimal signal quality.
+
+The operator monitored live SCART during gain0/4/8/16/24/31 tests and reported no
+visible change at capture start/stop or during those settings. The tap remained
+connected throughout, so this does not measure loading versus an untapped deck.
+
+## C31 comparison
+
+Initial PAL CVBS and first RF captures succeeded with C31 intact. The operator
+later removed C31 from the capture card and reattached it; this was not a
+software-controlled modification. The JVC itself remained unmodified.
+
+Matched-scene level 0 comparisons before/after removal found:
+
+| Diagnostic | C31 intact | C31 removed |
+| --- | ---: | ---: |
+| Entire-minute ADC codes |97–120 |97–120 |
+| Matched dropout segments |318 |295 |
+| Matched median bPSNR diagnostic |39.7 |38.6 |
+| Matched interval |2,772 fields |2,772 fields |
+
+These mixed results show no established major improvement or amplitude increase.
+Tape passes, tracking and reconnection can differ. The bPSNR value is not a
+calibrated SNR measurement. See [the comparison report](docs/C31-COMPARISON.md).
+C31 removal is not a driver installation requirement and is not a universal
+recommendation for other board layouts.
+
+## Actual capture evidence and limits
+
+Disconnected-input tests passed 1/10 seconds. PAL MiniDV CVBS tests reached 60
+seconds and produced recognizable colour output through CVBS-Decode. Real
+VHS/S-VHS RF tests passed 1/10/60 seconds, followed by one **45-minute** T7 capture:
+77,318,180,100 raw bytes, 294,947 interrupt callbacks, 1,152 ring wraps, no reported
+DMA/overrun/write errors and verified shutdown/PCI command restoration.
+
+The full RF decode produced 134,826 fields and a 44:56.52 lossless FFV1 export with
+standard dropout correction. A full-file FFmpeg decode passed; programme frames
+were spot-checked. This is one verified run, not a zero-loss or archival-quality
+certification. No family footage, raw samples or preview images are in Git.
+
+During the gain sweep, level 0 codes 99–119 expanded to 36–182 at level 31 without
+rail samples; a later minute at level 31 measured 36–181. Selected windows across
+the long capture also had no rail samples, but its entire histogram was not
+computed. An amplifier requirement is not established by ADC span alone.
+A repeatable horizontal streak was concealed by standard software dropout
+correction; see [dropout investigation](docs/DROPOUT-INVESTIGATION.md).
+
+Clock calibration, input loading/noise, sleep/wake, active unplug, disk-full
+recovery and reproducibility across other machines/cards remain unverified.

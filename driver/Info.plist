@@ -46,6 +46,6 @@
 		</dict>
 	</dict>
 	<key>OSBundleUsageDescription</key>
-	<string>Read-only PCI and register diagnostics for a CX23880 ADC capture card.</string>
+	<string>Raw 8-bit ADC capture and PCI diagnostics for a CX23880 capture card.</string>
 </dict>
 </plist>

@@ -70,3 +70,9 @@ VHS-Decode: VMUX1/level0/sixdb0/offset8/AGC1, 1/10/60-second actual RF captures.
 Only the offline decoder changes between the CVBS and RF tests; no driver code or
 stream transformation was added. The 10 s RF decode exported recognizable colour
 PAL video. Details and limits: docs/RF-FIRST-CAPTURE.md.
+
+The same implementation subsequently completed one 45-minute RF capture using
+level31/sixdb0 and the default64 MiB ring. Full offline S-VHS decode and standard
+dropout-corrected FFV1 export passed file-integrity checks. This extends the
+duration evidence without establishing repeated archival reliability, calibrated
+clock/analog quality or an authoritative lost-sample count. See TESTING.md.

@@ -1,5 +1,9 @@
 # RF gain sweep with live SCART observation
 
+Historical test report for the stated milestone. Later verification and current
+limitations are summarized in [TESTING.md](../TESTING.md). Media and diagnostic
+artifacts mentioned here are private, ignored local evidence, not repository files.
+
 2026-10-21, existing DriverKit v8/API5, C31 user-reported removed. The user
 played the PAL S-VHS tape and watched the VCR's SCART output during testing.
 The RF tap, 68 nF series capacitor, RCA/VMUX1, offset 8, AGC 1, nominal

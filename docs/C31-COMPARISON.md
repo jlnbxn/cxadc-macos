@@ -1,5 +1,9 @@
 # C31 removal: real RF comparison
 
+Historical test report for the stated milestone. Later verification and current
+limitations are summarized in [TESTING.md](../TESTING.md). Media and diagnostic
+artifacts mentioned here are private, ignored local evidence, not repository files.
+
 2026-10-21, DriverKit v8/API5, existing feature branch. The user reports C31
 removed and card reattached. Read-only reattachment verification was committed
 as f800853. The agent did not physically inspect or modify the board.
@@ -95,8 +99,7 @@ removed all tears, or established the need for an external amplifier.
 Ignored artifacts include the raw u8/sidecar, integrity and per-second level
 reports, SHA256, decoder metadata/logs, scene-match report, matched diagnostics,
 normal FFV1 export and rf-c31-matched-comparison.png. Existing baseline files
-remain intact. Native driver code and CX23885 project remain unchanged. Internal
-SSD has 79 GiB available after retaining the results. No MP4 was created.
+remain intact. Native driver code and CX23885 project remain unchanged. No media files are distributed with this report.
 
 This verifies another real one-minute RF capture and recognizable S-VHS decode
 after user-reported C31 removal. It does not prove archival-duration reliability,

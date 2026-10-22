@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+// Linux-derived hardware portions adapted for macOS, 2026-10-21.
+// Upstream copyrights/license and modification scope: THIRD_PARTY_NOTICES.md.
 // Lifecycle/build pattern adapted from hvr1200-macos (see docs/REFERENCES.md).
 #include <DriverKit/IOLib.h>
 #include <DriverKit/OSData.h>

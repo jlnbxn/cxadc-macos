@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Local ad hoc development build. Does not activate or change security settings.
 set -euo pipefail
 cd "$(dirname "$0")/.."
