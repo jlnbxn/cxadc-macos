@@ -408,3 +408,23 @@ or overwriting the original failed workflow record. Full FFV1 export started
 with default dropout correction, four threads and the existing 20 GB disk guard.
 New `.export-workflow.json` records this attempt; original `.workflow.json` is
 retained as failure evidence. Full export completion/visual review pending.
+
+Full DOC export subsequently completed successfully at 22:48 local in 9:50.043.
+Output `artifacts/tape01-pal-svhs-full-dropout-corrected.mkv`:
+40,067,321,047 bytes, 2,696.52 seconds (44:56.52), 928×576, 25 fps, FFV1,
+yuv422p10le, top-field-first. Duration agrees with 134,826 PAL fields. Exporter
+reports 22,637 dropout concealments; this is not a sample-loss measurement.
+Existing raw and both TBCs retained. Internal free space ~38 GiB, T7 ~49 GiB.
+
+FFmpeg decoded the first five seconds without errors. Inspected exported PNGs
+at 3, 1,200 and 2,500 seconds: recognizable colour garden, interior and outdoor
+programme scenes. At 2,695 seconds output is noise beyond the recorded programme;
+the full output deliberately retains it. These spot checks do not establish
+every frame's visual quality. No audio acquisition was added and no MP4 made.
+
+Final full-file FFmpeg read/decode (`-v error -xerror -threads 8`, video stream
+to null) exited 0 with an empty error log. This verifies the entire FFV1 file
+can be decoded, not that every frame is free of tape/playback artifacts.
+Eight Python diagnostic tests passed. Full capture/decode/export milestone is
+verified for this single tape; unplug/sleep/recovery and additional long runs
+remain separate unverified cases.

@@ -5,6 +5,9 @@ captured real unsigned 8-bit samples with disconnected inputs (1 and 10 seconds)
 and PAL MiniDV composite on RCA (through 60 seconds). CVBS-Decode produced a
 recognizable PAL picture from real captures. Genuine VHS playback RF has now
 also been captured and decoded into recognizable colour PAL video with VHS-Decode.
+One 45-minute RF capture has completed on the external T7 without reported
+DMA/overrun/write errors; its full decode exported 44:56.52 of dropout-corrected
+lossless FFV1 video. Sampled opening/middle/late programme frames were inspected.
 This is development software, not archival validation.
 
 ```sh

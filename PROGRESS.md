@@ -164,3 +164,12 @@ Validation now recognizes only that exact pattern, with five focused tests.
 User requested export; resumed using `--export-existing`, standard DOC/FFV1,
 internal output and disk guard. Export currently running; final checks pending.
 Raw/TBCs and original failed workflow record retained.
+
+Full DOC export completed: 44:56.52, 67,413 frames, 40.067 GB lossless FFV1,
+928×576/25 fps/yuv422p10le/top-field-first. Duration matches decoded field count;
+exporter reports 22,637 concealments. Opening/middle/late programme stills show
+recognizable colour images; tail still is noise after the recorded programme.
+Raw and TBCs retained, no audio or MP4. Roughly 38 GiB internal/49 GiB T7 free.
+Full-file FFmpeg video decode completed with exit0 and no logged errors.
+Eight Python diagnostic tests passed. One real full-tape RF→VHS-Decode→DOC FFV1
+workflow is now verified; no universal archival reliability or zero-loss claim.

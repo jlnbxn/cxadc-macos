@@ -108,3 +108,9 @@ metadata reuse was verified; no JSON renumbering or sample edits were made.
 `--export-existing` now resumes from those validated TBCs, preserves the original
 failed state file and records a new `.export-workflow.json`. The full standard-DOC
 FFV1 export is underway internally; no intermediate cleanup has occurred.
+
+Export completed: 40,067,321,047 bytes /40.07 GB internally, 44:56.52 duration,
+matching 134,826 decoded PAL fields. Standard DOC reported 22,637 concealments.
+Raw 77.32 GB and TBC pair 191.59 GB remain on T7. Internal free space about 38 GiB;
+T7 about 49 GiB. No generated intermediates have been removed. Opening, middle
+and late programme frames were visually checked; end-of-file noise is retained.
