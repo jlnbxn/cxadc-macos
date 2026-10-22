@@ -6,11 +6,25 @@ The driver and standalone CLI remain independently usable and unchanged.
 
 ## Checkouts and build
 
-Keep the repositories adjacent. The GUI integration branch is
+Keep the repositories adjacent. Use the published
+[GUI integration branch](https://github.com/jlnbxn/MISRC-GUI/tree/feature/macos-cxadc-backend),
 `feature/macos-cxadc-backend`, based on upstream
-`9c3894cd764db20c3eca835d041ad972cf986d37`. These local changes have not been
+`9c3894cd764db20c3eca835d041ad972cf986d37`. These changes have not been
 submitted upstream; an unmodified official release does not yet support this
 backend. Driver-side integration is on `feature/misrc-gui-integration`.
+
+For fresh checkouts, run from a common parent directory:
+
+```sh
+git clone https://github.com/jlnbxn/cxadc-macos.git
+git clone --branch feature/macos-cxadc-backend https://github.com/jlnbxn/MISRC-GUI.git
+cd cxadc-macos
+```
+
+The GUI fork's `main` branch retains upstream code; explicitly select the
+integration branch above. The published driver `main` includes the client and
+build/launch helpers. These instructions build from source, not a prebuilt or
+notarized distribution.
 
 Requirements: arm64 macOS, Xcode command-line tools, the already installed and
 approved CXADC DriverKit extension (control API 5, tested driver build 8), and
@@ -90,8 +104,8 @@ The existing server protocol was considered: its `/rf` path carries packed
 internal display frames and its controls do not expose this ADC configuration.
 A small native adapter reuses more of upstream's CXADC settings/RAW writer than
 a new protocol server. No pipes, subprocess sample transport, Linux sysfs
-emulation or embedded GUI source tree are used. Intended upstream submission is
-separate from this local work; nothing has been pushed or submitted.
+emulation or embedded GUI source tree are used. The source is published in the
+two repositories above; upstream pull-request submission is a separate step.
 
 ## Verification and limits
 
