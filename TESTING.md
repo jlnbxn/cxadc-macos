@@ -160,7 +160,7 @@ The exporter reports 22,637 concealments. A full-file FFmpeg video decode with
 visually checked; trailing noise beyond the programme was retained. Spot checks
 do not establish every frame's visual quality. There is no captured audio.
 
-## Unverified cases
+## MISRC-GUI verification
 
 ### MISRC-GUI native backend (2026-10-22)
 
@@ -178,12 +178,33 @@ with pinned VHS-Decode `177b505`, PAL SVHS at nominal 28.636363 MSPS. Both stop
 reports show safe teardown/restored command and zero reported DMA overruns.
 Five-second GUI/CLI contention test: CLI failed busy (`0xe00002d5`), zero bytes;
 GUI wrote 143,392,768 bytes and stopped cleanly. Automated flags exercised an
-actual window/display pipeline; visual and interactive GUI acceptance is pending.
+actual window/display pipeline; user acceptance is recorded below.
 No personal captures or logs are tracked. The original CX23885 project remains
 unchanged. The GUI/client were ad-hoc signed locally with the existing entitlement;
 the installed extension and system-security settings were not changed.
 
-### Remaining driver and capture cases
+### Interactive MISRC-GUI acceptance (2026-10-22)
+
+The user launched the prepared GUI and reported that it worked, then supplied
+their own 230,162,432-byte RAW recording for decoding. The session log confirms
+native u8, VMUX 1, level 0, boost 0, center offset 8, AGC 1, with equal direct
+writer read/written counts and no reported writer drops. Nominal sample duration
+is about 8.04 seconds. No individual F8 control interaction was independently
+observed; visual acceptance is the user's report, not computer-use automation.
+
+PAL SVHS decode with the same pinned decoder/settings completed: 400 fields,
+contiguous sequence, alternating parity, no duplicate flags; each TBC is
+284,204,000 bytes, matching metadata. Standard FFV1 export completed with 200
+frames and 19 reported dropout concealments. Original RAW and decoded data are
+retained locally, ignored by Git. The viewing export is private. This completes
+the first user-operated single-card capture/decode/export slice; extended GUI
+reliability and distribution/upstream integration work remain separate.
+
+FFprobe confirms 8 seconds, 928×576 at 25 fps, FFV1/top-field-first. A full-file
+FFmpeg video decode completed without reported errors. Picture quality remains
+for the user to assess in the exported clip.
+
+## Unverified cases
 
 - Calibrated sampling clock, analog gain/SNR, impedance and VCR loading.
 - Authoritative dropped-sample detection; reported count remains null.

@@ -89,7 +89,12 @@ existing CLI/DriverKit capture implementation. See [the integration guide](docs/
 - GUI commits: `59909e4` (Darwin shared memory), `916efd3` (native backend,
   tests, controls and guide). Nothing pushed, published or submitted upstream.
 
-Manual waveform/control/button acceptance, same-window repeated cycles,
-active unplug, full disk and long GUI capture remain unverified. No computer
-use was performed after the user's instruction; leave interactive testing to
-the user. The executable is ready via `scripts/launch-misrc-gui.sh`.
+The user subsequently launched the GUI, reported success and supplied their own
+eight-second recording. Decode produced 400 fields; dropout-corrected FFV1 export
+produced 200 frames/8 seconds with 19 reported concealments and passed a full-file
+FFmpeg decode. See TESTING.md. This completes the first user-operated capture/
+decode/export slice. Individual control acceptance, same-window repeated cycles,
+active unplug, full disk and long GUI capture remain unverified. No computer use
+was performed after the user's instruction. The executable remains ready via
+`scripts/launch-misrc-gui.sh`. Upstream submission and distribution are separate;
+an official unmodified MISRC-GUI release does not yet support this backend.
